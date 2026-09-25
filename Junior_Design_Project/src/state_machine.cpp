@@ -1,5 +1,7 @@
 // State Machine!!!
 #include <Arduino.h>
+#include "state_machine.h"
+#include "websocket_client.h"
 
 typedef enum {
     STATE_IDLE,
@@ -22,8 +24,9 @@ void ledOn(int number);
 
 // NEED SOME INITIALIZATION STUFF HERE
 
+// True once for each ping from the websocket server, so each ping moves us to the next state
 bool externalSignal(){
-
+    return websocketPingReceived();
 }
 
 void ledOn(int number){
@@ -42,6 +45,8 @@ void ledOn(int number){
 
     } else if(number == 7) {
 
+    } else if(number == 8) {
+
     } else {
         // base case, maybe just have an on LED
     }
@@ -49,14 +54,12 @@ void ledOn(int number){
 }
 
 void stateMachineUpdate() {
-    int number = 0;
-
     switch (currentState) {
         case STATE_IDLE:
         ledOn(1);
 
             if(externalSignal()) {
-                Serial.print("idle to drive wall turn");
+                Serial.println("idle to drive wall turn");
                 currentState = STATE_DRIVE_WALL_TURN;
             }
 
@@ -66,7 +69,7 @@ void stateMachineUpdate() {
         ledOn(2);
 
             if(externalSignal()) {
-                Serial.print("init");
+                Serial.println("init");
                 currentState = STATE_IDLE;
             }
             break;
@@ -75,7 +78,7 @@ void stateMachineUpdate() {
         ledOn(3);
 
             if(externalSignal()) {
-                Serial.print("drive to");
+                Serial.println("drive to return home");
                 currentState = STATE_RETURN_HOME;
             }
             break;
@@ -83,7 +86,7 @@ void stateMachineUpdate() {
         ledOn(4);
 
             if(externalSignal()) {
-                Serial.print("find lane to follow lane");
+                Serial.println("find lane to follow lane");
                 currentState = STATE_LANE_FOLLOW;
             }
             break;
@@ -91,7 +94,7 @@ void stateMachineUpdate() {
         ledOn(5);
 
             if(externalSignal()) {
-                Serial.print("lane follow to turn");
+                Serial.println("lane follow to turn");
                 currentState = STATE_TURN;
             }
             break;
@@ -99,7 +102,7 @@ void stateMachineUpdate() {
         ledOn(6);
 
             if(externalSignal()) {
-                Serial.print("drive wall turn to find lane");
+                Serial.println("drive wall turn to find lane");
                 currentState = STATE_FIND_LANE;
             }
 
@@ -108,7 +111,7 @@ void stateMachineUpdate() {
         ledOn(7);
 
             if(externalSignal()) {
-                Serial.print("turn to drive");
+                Serial.println("turn to drive");
                 currentState = STATE_DRIVE;
             }
 
@@ -117,7 +120,7 @@ void stateMachineUpdate() {
         ledOn(8);
 
             if(externalSignal()) {
-                Serial.print("return home to idle");
+                Serial.println("return home to idle");
                 currentState = STATE_IDLE;
             }
 
