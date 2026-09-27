@@ -10,17 +10,17 @@ const uint16_t SERVER_PORT = 80;
 const char* SERVER_PATH = "/ws";
 
 const char* CLIENT_ID = "BITBANGER123";
+String message= "";
 
 WebSocketsClient webSocket;
 
 bool authenticated = false;
 unsigned long lastSendTime = 0;
 
-void webSocketEvent(
-  WStype_t type,
-  uint8_t* payload,
-  size_t length
-) {
+void webSocketEvent( WStype_t type, uint8_t* payload, 
+                    size_t length) 
+  {
+
   switch (type) {
     case WStype_CONNECTED:
       Serial.println("Connected to WebSocket server");
@@ -30,7 +30,7 @@ void webSocketEvent(
       break;
 
     case WStype_TEXT: {
-      String message;
+      message = "";
 
       for (size_t i = 0; i < length; i++) {
         message += (char)payload[i];
@@ -68,33 +68,34 @@ void webSocketEvent(
 }
 
 void webSocket_ini() {
-        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-        while (WiFi.status() != WL_CONNECTED) {
-                delay(500);
-                Serial.print(".");
-        }
+    while (WiFi.status() != WL_CONNECTED) {
+            delay(500);
+            Serial.print(".");
+    }
 
-        Serial.println();
-        Serial.println("Wi-Fi connected");
+    Serial.println();
+    Serial.println("Wi-Fi connected");
 
-        webSocket.begin(
-        SERVER_IP,
-        SERVER_PORT,
-        SERVER_PATH
-        );
+    webSocket.begin(SERVER_IP, SERVER_PORT, SERVER_PATH);
 
-        webSocket.onEvent(webSocketEvent);
-        webSocket.setReconnectInterval(5000);
-        webSocket.enableHeartbeat(15000, 3000, 2);
+    webSocket.onEvent(webSocketEvent);
+    webSocket.setReconnectInterval(5000);
+    webSocket.enableHeartbeat(15000, 3000, 2);
 }
 
 void webSocket_send_message(char *message) {
         webSocket.loop();
-        if (authenticated &&
-                millis() - lastSendTime >= 5000) {
-                lastSendTime = millis();
-                // what do you want to send?
-                webSocket.sendTXT(message);
+        if (authenticated && millis() - lastSendTime >= 5000) 
+        {
+          lastSendTime = millis();
+          // what do you want to send?
+          webSocket.sendTXT(message);
         }
+}
+
+String get_message() 
+{
+  return message;
 }

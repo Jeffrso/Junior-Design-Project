@@ -6,30 +6,13 @@
 #include <WebSockets.h>
 #include <WebSocketsClient.h>
 
-
-// Error with global variable definitoin without 'static' keyword V
-// Moved to Main file for success
-// // Network Configuration
-// // Update to tufts_eecs and network password
-// const char* WIFI_SSID = SECRET_SSID;
-// #define WIFI_SSID SECRET_SSID
-// const char* WIFI_PASSWORD = SECRET_PASS;
-// const static char* SERVER_IP = "10.5.9.24"; 
-// const char* SERVER_IP = "10.5.9.24";  // IP of server ESP32
-// const uint16_t SERVER_PORT = 80;
-// const char* SERVER_PATH = "/ws";
-
-// const char* CLIENT_ID = "BITBANGER123";
-
-// WebSocketsClient webSocket;
-
-// bool authenticated = false;
-// unsigned long lastSendTime = 0;
+// static String message;s
 
 
 void webSocketEvent(WStype_t type,uint8_t* payload,size_t length);
 void webSocket_ini();
 void webSocket_send_message(char *message);
+String get_message();
 
 #endif
 
@@ -51,3 +34,25 @@ collect2.exe: error: ld returned 1 exit status
 ================================================== [FAILED] Took 5.75 seconds ==================================================
 
 */
+
+
+// Error with global variable definitoin without 'static' keyword V
+// Moved to Main file for success
+// // Network Configuration
+// // Update to tufts_eecs and network password
+// const char* WIFI_SSID = SECRET_SSID;
+// #define WIFI_SSID SECRET_SSID
+// const char* WIFI_PASSWORD = SECRET_PASS;
+// const static char* SERVER_IP = "10.5.9.24"; 
+// const char* SERVER_IP = "10.5.9.24";  // IP of server ESP32
+// const uint16_t SERVER_PORT = 80;
+// const char* SERVER_PATH = "/ws";
+
+// const char* CLIENT_ID = "BITBANGER123";
+
+// WebSocketsClient webSocket;
+
+// bool authenticated = false;
+// unsigned long lastSendTime = 0;
+
+// c:/users/amouz/.platformio/packages/toolchain-xtensa-esp32s3/bin/../lib/gcc/xtensa-esp32s3-elf/8.4.0/../../../../xtensa-esp32s3-elf/bin/ld.exe: .pio\build\esp32s3_n32r16v\src\web.cpp.o:C:\Users\amouz\Junior_Design\Junior-Design-Project/include/web.h:9: multipledefinition of `message'; main.cpp.o:web.h:9: first defined here
