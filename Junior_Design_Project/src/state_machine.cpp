@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include "state_machine.h"
 #include "websocket_client.h"
+#include "sevenSeg.h"
+
 
 typedef enum {
     STATE_IDLE,
@@ -30,27 +32,13 @@ bool externalSignal(){
 }
 
 void ledOn(int number){
+    uint8_t segs = sevenseg_decode(number);
 
-    if(number == 1) {
-
-    } else if(number == 2) {
-
-    } else if(number == 3) {
-
-    } else if(number == 4) {
-
-    } else if(number == 5) {
-
-    } else if(number == 6) {
-
-    } else if(number == 7) {
-
-    } else if(number == 8) {
-
-    } else {
-        // base case, maybe just have an on LED
+    // Assuming bit 6 is segment 'a' down to bit 0 for segment 'g'
+    for (int i = 0; i < 7; i++) {
+        bool bit_val = (segs >> (6 - i)) & 0x01;
+        digitalWrite(SEG_PINS[i], bit_val);
     }
-
 }
 
 void stateMachineUpdate() {
