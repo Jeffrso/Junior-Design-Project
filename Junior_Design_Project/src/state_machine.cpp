@@ -4,20 +4,20 @@
 #include "websocket_client.h"
 #include "sevenSeg.h"
 
-
+// In the order the robot goes through:
 typedef enum {
-    STATE_IDLE,
-    STATE_INITIALIZE,
-    STATE_DRIVE,
-    STATE_FIND_LANE,
-    STATE_LANE_FOLLOW,
-    STATE_DRIVE_WALL_TURN,
-    STATE_TURN,
-    STATE_RETURN_HOME
+    STATE_INITIALIZE,       // 1
+    STATE_IDLE,             // 2
+    STATE_DRIVE_WALL_TURN,  // 3
+    STATE_FIND_LANE,        // 4
+    STATE_LANE_FOLLOW,      // 5
+    STATE_TURN,             // 6
+    STATE_DRIVE,            // 7
+    STATE_RETURN_HOME       // 8
 } RobotState;
 
 // For global state whatev
-RobotState currentState = STATE_IDLE;
+RobotState currentState = STATE_INITIALIZE;
 
 //function stuff
 bool externalSignal();
@@ -28,13 +28,24 @@ void ledOn(int number);
 
 // True once for each ping from the websocket server, so each ping moves us to the next state
 bool externalSignal(){
+    if (TEST_MODE) {
+        // fake a ping every TEST_PING_MS so we can watch it cycle through the states
+        static unsigned long lastPing = 0;
+        if (millis() - lastPing >= TEST_PING_MS) {
+            lastPing = millis();
+            return true;
+        }
+        return false;
+    }
     return websocketPingReceived();
 }
 
 void ledOn(int number){
     uint8_t segs = sevenseg_decode(number);
+    if (SEG_ACTIVE_LOW) {
+        segs = ~segs;   // lookup table is 1 = on (common cathode), flip it for common anode
+    }
 
-    // Assuming bit 6 is segment 'a' down to bit 0 for segment 'g'
     for (int i = 0; i < 7; i++) {
         bool bit_val = (segs >> (6 - i)) & 0x01;
         digitalWrite(SEG_PINS[i], bit_val);
@@ -43,32 +54,31 @@ void ledOn(int number){
 
 void stateMachineUpdate() {
     switch (currentState) {
-        case STATE_IDLE:
+        case STATE_INITIALIZE:
         ledOn(1);
+
+            if(externalSignal()) {
+                Serial.println("init to idle");
+                currentState = STATE_IDLE;
+            }
+            break;
+        case STATE_IDLE:
+        ledOn(2);
 
             if(externalSignal()) {
                 Serial.println("idle to drive wall turn");
                 currentState = STATE_DRIVE_WALL_TURN;
             }
 
-
             break;
-        case STATE_INITIALIZE:
-        ledOn(2);
-
-            if(externalSignal()) {
-                Serial.println("init");
-                currentState = STATE_IDLE;
-            }
-            break;
-        // COULD REMOVE THEDRIVE STATE AND JUST HAVE RETURN HOME?????????
-        case STATE_DRIVE:
+        case STATE_DRIVE_WALL_TURN:
         ledOn(3);
 
             if(externalSignal()) {
-                Serial.println("drive to return home");
-                currentState = STATE_RETURN_HOME;
+                Serial.println("drive wall turn to find lane");
+                currentState = STATE_FIND_LANE;
             }
+
             break;
         case STATE_FIND_LANE:
         ledOn(4);
@@ -86,23 +96,23 @@ void stateMachineUpdate() {
                 currentState = STATE_TURN;
             }
             break;
-        case STATE_DRIVE_WALL_TURN:
-        ledOn(6);
-
-            if(externalSignal()) {
-                Serial.println("drive wall turn to find lane");
-                currentState = STATE_FIND_LANE;
-            }
-
-            break;
         case STATE_TURN:
-        ledOn(7);
+        ledOn(6);
 
             if(externalSignal()) {
                 Serial.println("turn to drive");
                 currentState = STATE_DRIVE;
             }
 
+            break;
+        // COULD REMOVE THEDRIVE STATE AND JUST HAVE RETURN HOME?????????
+        case STATE_DRIVE:
+        ledOn(7);
+
+            if(externalSignal()) {
+                Serial.println("drive to return home");
+                currentState = STATE_RETURN_HOME;
+            }
             break;
         case STATE_RETURN_HOME:
         ledOn(8);
