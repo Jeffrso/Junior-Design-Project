@@ -99,3 +99,11 @@ String get_message()
 {
   return message;
 }
+
+int valid_message() 
+{
+  if (message != "") {
+    return 1;
+  }
+  return 0;
+}

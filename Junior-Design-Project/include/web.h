@@ -13,6 +13,7 @@ void webSocketEvent(WStype_t type,uint8_t* payload,size_t length);
 void webSocket_ini();
 void webSocket_send_message(char *message);
 String get_message();
+int valid_message();
 
 #endif
 
