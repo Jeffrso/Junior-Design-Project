@@ -5,7 +5,7 @@
 const char* WIFI_SSID = SECRET_SSID;
 const char* WIFI_PASSWORD = SECRET_PASS;
 
-const char* SERVER_IP = "10.5.9.24";  // IP of server ESP32
+const char* SERVER_IP = "10.5.9.24"; // IP of server ESP32
 const uint16_t SERVER_PORT = 80;
 const char* SERVER_PATH = "/ws";
 
@@ -16,6 +16,7 @@ WebSocketsClient webSocket;
 
 bool authenticated = false;
 unsigned long lastSendTime = 0;
+bool newPing = false; // set when a server message comes in, cleared when the state machine reads it
 
 void webSocketEvent( WStype_t type, uint8_t* payload, 
                     size_t length) 
@@ -25,7 +26,7 @@ void webSocketEvent( WStype_t type, uint8_t* payload,
     case WStype_CONNECTED:
       Serial.println("Connected to WebSocket server");
 
-      // First message must be an approved ID!
+      // First message must be an approved ID
       webSocket.sendTXT(CLIENT_ID);
       break;
 
@@ -48,6 +49,15 @@ void webSocketEvent( WStype_t type, uint8_t* payload,
       if (message.indexOf("\"error\"") >= 0) {
         authenticated = false;
         Serial.println("Authentication failed");
+      }
+
+      // Only messages for us (containing our ID) count as a ping, so other teams' traffic
+      // is ignored. Login messages never count ("authenticat" catches both
+      // "authentication_required" and "authenticated").
+      if (message.indexOf(CLIENT_ID) >= 0 &&
+          message.indexOf("authenticat") < 0 &&
+          message.indexOf("\"error\"") < 0) {
+        newPing = true;
       }
 
       break;
@@ -95,7 +105,21 @@ void webSocket_send_message(char *message) {
         }
 }
 
-String get_message() 
+String get_message()
 {
   return message;
+}
+
+// Call every pass through loop() so messages come in right away
+void webSocket_loop() {
+  webSocket.loop();
+}
+
+// True once for each new server message, so one message = one state change
+bool webSocket_ping_received() {
+  if (newPing) {
+    newPing = false;
+    return true;
+  }
+  return false;
 }

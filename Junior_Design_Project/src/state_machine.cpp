@@ -1,7 +1,7 @@
-// State Machine!!!
+// State Machine
 #include <Arduino.h>
 #include "state_machine.h"
-#include "websocket_client.h"
+#include "web.h"
 #include "sevenSeg.h"
 
 // In the order the robot goes through:
@@ -37,7 +37,7 @@ bool externalSignal(){
         }
         return false;
     }
-    return websocketPingReceived();
+    return webSocket_ping_received();
 }
 
 void ledOn(int number){
