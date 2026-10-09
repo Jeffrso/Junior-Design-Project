@@ -1,0 +1,11 @@
+Change Component Comment : Designator=U1 Old Comment=ESP32-S3-DEVKITC-1-N16R8V New Comment=ESP32-S3-DEVKITC
+Change Component Designator: OldDesignator=U1 NewDesignator=U2
+Add Pin To Net: Unknown Pin: Pin R1-1
+Add Pin To Net: Unknown Pin: Pin R1-2
+Add Pin To Net: Unknown Pin: Pin R2-1
+Add Pin To Net: Unknown Pin: Pin R2-2
+Change Net Name : Old Net Name=NetU?_J1_6 New Net Name=NetU2_J1_6
+Change Net Name : Old Net Name=NetU?_J1_7 New Net Name=NetU2_J1_7
+Add Class Member: Failed to add class member : Component R1 Resistor
+Add Class Member: Failed to add class member : Component R2 Resistor
+Added Member To Class: ClassName=Vehicle_Circuit Member=Component U2 ESP32-S3-DEVKITC

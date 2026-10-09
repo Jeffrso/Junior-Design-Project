@@ -1,0 +1,13 @@
+Added Pin To Net: NetName=NetU1_4 Pin=D2-1
+Added Pin To Net: NetName=NetU1_4 Pin=Q1-1
+Add Pin To Net: Unknown Pin: Pin R1-1
+Add Pin To Net: Unknown Pin: Pin R1-2
+Add Pin To Net: Unknown Pin: Pin R2-1
+Add Pin To Net: Unknown Pin: Pin R2-2
+Added Pin To Net: NetName=NetU1_4 Pin=U1-1
+Added Pin To Net: NetName=NetU1_4 Pin=U1-8
+Added Pin To Net: NetName=NetU1_4 Pin=U1-9
+Added Pin To Net: NetName=NetU1_4 Pin=U?-J1_21
+Change Net Name : Old Net Name=NetU1_4 New Net Name=GND
+Add Class Member: Failed to add class member : Component R1 Resistor
+Add Class Member: Failed to add class member : Component R2 Resistor

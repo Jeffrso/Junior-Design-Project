@@ -101,7 +101,7 @@ GenerateClassCluster=0
 DocumentUniqueId=YNRFRWAI
 
 [Document4]
-DocumentPath=drive_circuit.SchDoc
+DocumentPath=Vehicle_Circuit.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
