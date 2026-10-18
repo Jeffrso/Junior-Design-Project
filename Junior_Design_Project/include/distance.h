@@ -9,6 +9,9 @@
 
 const uint8_t IR_LED_PIN   = 17;
 const uint8_t IR_SENSE_PIN = 7; // ADC1 pin
+const uint8_t IR_LED_PIN_1   = 16;
+// const uint8_t IR_SENSE_PIN = 7; // ADC1 pin
+
 
 // true = bench test (no WiFi / no state machine, prints sensor 10 times a second)
 const bool COLLISION_TEST_MODE = true;
