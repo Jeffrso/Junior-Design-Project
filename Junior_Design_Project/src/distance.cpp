@@ -1,54 +1,59 @@
 // IR collision sensor.
-// Background subtraction: read GPIO 7 with IR LED on, then with it off, and subtract.
-// Room light is in both readings so it cancels.
+// 1. Each reading = LEDs on minus LEDs off. Room light is in both, so it cancels (works in any lighting)
+// 2. At power-up: average 10 readings with nothing in front = baseline (LED light that leaks
+//    straight into photodiode). After that: signal = reading - baseline
+// 3. Signal above THRESHOLD_MV = obstacle. Reflection falls off as 1/d^2, so threshold sets stop distance
 #include "distance.h"
 
-// Tuning number. Set it once: put the track wall STOP_CM in front of the sensor
-// and copy the "reflection" value that the bench test prints.
-const int   STOP_MV = 49;   // reflection (mV) with wall at STOP_CM
-const float STOP_CM = 22.0;
+const int THRESHOLD_MV = 18; // signal (mV) with the wall at stop distance
+const int PAIRS = 8; // on/off pairs per reading (16 ms, averages out light flicker)
+const int SETTLE_US = 1000; // let photodiode settle after switching LEDs
 
-const int PAIRS      = 8;     // LED on/off pairs per reading: 8 x 2 ms = 16 ms, about two 120 Hz flicker periods
-const int SETTLE_US  = 1000;  // wait after witching LED so phototransistor settles
-const int ADC_TOP_MV = 2800;  // ADC can't read above about 3.1 V, so stay a bit under it
+static int baselineMv = 0;
+static int signalMv = 0;
+static int roomMv = 0; // LEDs off = room light (printed)
+static bool obstacle = false;
 
-static int  reflectMv = 0;    // LED on minus LED off = light bounced back by the obstacle
-static int  roomMv    = 0;    // LED off = background room light
-static bool obstacle  = false;
-
-void irSensorSetup() {
-  pinMode(IR_LED_PIN, OUTPUT);
-  digitalWrite(IR_LED_PIN, LOW);
-
-  pinMode(IR_LED_PIN_1, OUTPUT);
-  // digitalWrite(IR_LED_PIN_`, LOW);
+static void setLeds(uint8_t level) {
+  digitalWrite(IR_LED_PIN, level);
+  digitalWrite(IR_LED_PIN_2, level);
 }
 
-// Room light so bright there's no room left on the ADC to see the wall: can't see, so stop (fail safe).
-static bool blinded() {
-
-  return roomMv + STOP_MV > ADC_TOP_MV;
-}
-
-bool collisionUpdate() {
+// One reading: average of (LEDs on - LEDs off)
+static int readReflection() {
   long diffSum = 0, offSum = 0;
   for (int i = 0; i < PAIRS; i++) {
-    digitalWrite(IR_LED_PIN, HIGH);
+    setLeds(HIGH);
     delayMicroseconds(SETTLE_US);
     int on = analogReadMilliVolts(IR_SENSE_PIN);
-    digitalWrite(IR_LED_PIN, LOW);
+    setLeds(LOW);
     delayMicroseconds(SETTLE_US);
     int off = analogReadMilliVolts(IR_SENSE_PIN);
     diffSum += on - off;
     offSum += off;
   }
-  reflectMv = diffSum / PAIRS;
   roomMv = offSum / PAIRS;
+  return diffSum / PAIRS;
+}
 
-  if (reflectMv > STOP_MV) {
-    obstacle = true; // closer than STOP_CM
-  } else if (reflectMv < STOP_MV * 7 / 10) {
-    obstacle = false; // clear again once about 20% farther away
+void irSensorSetup() {
+  pinMode(IR_LED_PIN, OUTPUT);
+  pinMode(IR_LED_PIN_2, OUTPUT);
+  setLeds(LOW);
+
+  long sum = 0; // baseline: nothing in front at power-up (press RESET to redo)
+  for (int i = 0; i < 10; i++) {
+    sum += readReflection();
+  }
+  baselineMv = sum / 10;
+}
+
+bool collisionUpdate() {
+  signalMv = readReflection() - baselineMv;
+  if (signalMv > THRESHOLD_MV) {
+    obstacle = true;
+  } else if (signalMv < THRESHOLD_MV / 2) {
+    obstacle = false; // clears a bit farther out, so it doesn't flicker at the edge
   }
   return obstacle;
 }
@@ -64,9 +69,6 @@ void collisionTestLoop() {
   if (millis() - lastPrint < 100) return;
   lastPrint = millis();
 
-  // Distance estimate from 1/d^2 law: d = STOP_CM * sqrt(STOP_MV / reflection)
-  float cm = reflectMv > 0 ? STOP_CM * sqrtf((float)STOP_MV / reflectMv) : 99;
-  Serial.printf("room light %4d mV | reflection %4d mV | ~%4.1f cm | %s\n", roomMv, reflectMv,
-                cm > 99 ? 99 : cm, blinded() ? "TOO BRIGHT: STOP" : obstacle ? "OBSTACLE: STOP" : "clear");
+  Serial.printf("room light %4d mV | baseline %3d mV | signal %4d mV | %s\n",
+                roomMv, baselineMv, signalMv, obstacle ? "OBSTACLE: STOP" : "clear");
 }
-
