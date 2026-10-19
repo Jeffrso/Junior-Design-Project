@@ -13,7 +13,7 @@ void setup() {
     delay(10); // wait up to 3 s for the serial monitor so startup prints aren't lost
   }
   Serial.println("\n=== boot ===");
-  sevenseg_setup();
+  //sevenseg_setup();
   irSensorSetup();
 
   if (COLLISION_TEST_MODE) {
