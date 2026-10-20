@@ -17,7 +17,7 @@ void drive_single_forward(uint8_t motor, uint8_t pwm) {
                 digitalWrite(REVERSE_2, LOW);
                 analogWrite(FORWARD_2, pwm);
         }
-        delay(50);
+        delay(MOTOR_DELAY);
 
 }
 
@@ -29,7 +29,7 @@ void drive_single_reverse(uint8_t motor, uint8_t pwm) {
                 digitalWrite(REVERSE_2, LOW);
                 analogWrite(FORWARD_2, pwm);
         }
-        delay(50);
+        delay(MOTOR_DELAY);
 }
 
 void drive_forward(uint8_t pwm) {
