@@ -1,19 +1,14 @@
 #include "motor_driver.h"
 
-void drive_forward(int pwm) {
-        digitalWrite(REVERSE, LOW);
-        analogWrite(FORWARD, pwm);\
-        delay(500);
-}
-
-void drive_reverse(int pwm) {
-        digitalWrite(FORWARD, LOW);
-        analogWrite(REVERSE, pwm);
-         delay(500);
+void motorSetup() {
+        pinMode(REVERSE, OUTPUT);
+        pinMode(FORWARD, OUTPUT);
+        pinMode(REVERSE_2, OUTPUT);
+        pinMode(FORWARD_2, OUTPUT);
 }
 
 
-void drive_forward(uint8_t motor, int pwm) {
+void drive_single_forward(uint8_t motor, uint8_t pwm) {
   
         if (motor == 0) {
                 digitalWrite(REVERSE, LOW);
@@ -22,17 +17,44 @@ void drive_forward(uint8_t motor, int pwm) {
                 digitalWrite(REVERSE_2, LOW);
                 analogWrite(FORWARD_2, pwm);
         }
-          delay(50);
+        delay(50);
 
 }
 
-void drive_reverse(uint8_t motor, int pwm) {
+void drive_single_reverse(uint8_t motor, uint8_t pwm) {
         if (motor == 0) {
-                digitalWrite(FORWARD, LOW);
-                analogWrite(REVERSE, pwm);
+                digitalWrite(REVERSE, LOW);
+                analogWrite(FORWARD, pwm);
         } else {
-                digitalWrite(FORWARD_2, LOW);
-                analogWrite(REVERSE_2, pwm);
+                digitalWrite(REVERSE_2, LOW);
+                analogWrite(FORWARD_2, pwm);
         }
-          delay(50);
+        delay(50);
+}
+
+void drive_forward(uint8_t pwm) {
+        drive_single_forward(0, pwm);
+        drive_single_forward(1, pwm);
+}
+
+void drive_reverse(uint8_t pwm) {
+        drive_single_reverse(0, pwm);
+        drive_single_reverse(1, pwm);
+}
+
+void stop_motors() {
+        digitalWrite(FORWARD, LOW);
+        digitalWrite(REVERSE, LOW);
+        digitalWrite(FORWARD_2, LOW);
+        digitalWrite(REVERSE_2, LOW);
+}
+
+void turn_left(uint8_t pwm) {
+        drive_single_forward(1, pwm);
+        drive_single_forward(0, 0);
+}
+
+void turn_right(uint8_t pwm) {
+        drive_single_forward(0, pwm);
+        drive_single_forward(1, 0);
 }
