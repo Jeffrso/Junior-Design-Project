@@ -1,85 +1,71 @@
 #include "distance.h"
+#include <Arduino.h>
+#include "motor_driver.h"
+#include "distancedemo.h"
 
 typedef enum {
     STOP,
-    REVERSE,
-    FOWARD
+    D_REVERSE,
+    D_FORWARD
 } State;
 
 // start stopped
-State current = STOP;
+static State current = D_FORWARD;
+static unsigned long reverseStartTime = 0;
+const unsigned long REVERSE_DURATION_MS = 1000; // Back up for 1 second
+
+static void setStop() {
+    analogWrite(FORWARD, 0);
+    analogWrite(REVERSE, 0);
+    analogWrite(FORWARD_2, 0);
+    analogWrite(REVERSE_2, 0);
+    digitalWrite(FORWARD, LOW);
+    digitalWrite(REVERSE, LOW);
+    digitalWrite(FORWARD_2, LOW);
+    digitalWrite(REVERSE_2, LOW);
+}
 
 void updateState() {
+
+    collisionUpdate();
+
     if(obstacleAhead()) {
-        if(current =! REVERSE) {
+        if(current != D_REVERSE) {
           current = STOP;
         }
     }
-}
 
-switch (current) {
-  case STOP:
-  // motors to 0
-  // maybe a delay here
-  current = REVERSE;
+    switch (current) {
+    case STOP:
+    // motors to 0
+    setStop();
+    delay(500);
+    // maybe a delay here
+    reverseStartTime = millis();
+    current = D_REVERSE;
 
-  break;
-  case FOWARD:
-      if(collisionUpdate()) {
-        current = STOP;
-      }
-
-  break;
-  case REVERSE:
-  // motors to reverse
-
-  break;
-}
-
-static unsigned long reverseTimer = 0;
-const unsigned long REVERSE_DURATION_MS = 800; // How long to back up (800ms)
-
-void stateMachineUpdate() {
-  // 1. SAFETY OVERRIDE: Check for obstacle regardless of current state
-  if (obstacleAhead()) {
-    // If we weren't already reversing, force an immediate stop & trigger reverse
-    if (currentRobotState != STATE_OBSTACLE_REVERSE) {
-      currentRobotState = STATE_OBSTACLE_STOP;
-    }
-  }
-
-  // 2. STATE MACHINE LOGIC
-  switch (currentRobotState) {
-    
-    case STATE_NORMAL:
-      // Your normal robot movement / web socket control goes here
-      // e.g., moveForward();
-      break;
-
-    case STATE_OBSTACLE_STOP:
-      // Step A: Stop the motors instantly
-      stopMotors(); 
-      
-      // Brief pause or transition straight into reversing
-      reverseTimer = millis();
-      currentRobotState = STATE_OBSTACLE_REVERSE;
-      break;
-
-    case STATE_OBSTACLE_REVERSE:
-      // Step B: Drive backward
-      moveBackward();
-
-      // Step C: Check if we have reversed long enough AND the path is clear now
-      if (millis() - reverseTimer >= REVERSE_DURATION_MS) {
-        // Only resume normal movement if the obstacle is actually gone
-        if (!obstacleAhead()) {
-          stopMotors();
-          currentRobotState = STATE_NORMAL;
-        } else {
-          // If still blocked, reset the timer to back up a bit more
-          reverseTimer = millis(); 
+    break;
+    case D_FORWARD:
+    drive_forward(1, 100);
+    drive_forward(0, 100);
+        if(collisionUpdate()) {
+            current = STOP;
         }
-      }
-      break;
-  }
+
+    break;
+    case D_REVERSE:
+    drive_reverse(1, 100);
+    drive_reverse(0, 100);
+
+    if (millis() - reverseStartTime >= REVERSE_DURATION_MS) {
+                // check if the path is clear now
+                if (!obstacleAhead()) {
+                    current = D_FORWARD; // Safe to resume normal driving!
+                } else {
+                    // If still blocked, reset the timer to back up more
+                    reverseStartTime = millis(); 
+                }
+        }
+        break;
+    }
 }
