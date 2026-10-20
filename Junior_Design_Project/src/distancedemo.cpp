@@ -9,7 +9,6 @@ typedef enum {
 // start stopped
 State current = STOP;
 
-
 void updateState() {
     if(obstacleAhead()) {
         if(current =! REVERSE) {
@@ -36,12 +35,6 @@ switch (current) {
 
   break;
 }
-
-
-
-
-
-
 
 static unsigned long reverseTimer = 0;
 const unsigned long REVERSE_DURATION_MS = 800; // How long to back up (800ms)

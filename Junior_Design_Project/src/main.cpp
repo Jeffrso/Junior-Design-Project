@@ -2,6 +2,7 @@
 #include "state_machine.h"
 #include "web.h"
 #include "distance.h"
+#include "motor_driver.h"
 
 void setup() {
   Serial.begin(115200);
@@ -10,10 +11,11 @@ void setup() {
     delay(10); // wait up to 3 s for serial monitor so startup prints aren't lost
   }
   Serial.println("\n=== boot ===");
+  motorSetup();
   irSensorSetup();
 
-  if (COLLISION_TEST_MODE) {
-    return; // collision bench test doesn't need WiFi
+  if (COLLISION_TEST_MODE || MOTOR_TEST_MODE) {
+    return; // bench tests don't need WiFi
   }
   stateMachineSetup(); // turn on Enter-key interrupt
   if (!TEST_MODE) {
@@ -24,6 +26,12 @@ void setup() {
 void loop() {
   if (COLLISION_TEST_MODE) {
     collisionTestLoop(); // prints sensor data
+    return;
+  }
+  if (MOTOR_TEST_MODE) {
+    drive_forward(0, 200); // both motors forward
+    drive_forward(1, 200);
+    delay(500);
     return;
   }
   if (!TEST_MODE) {
