@@ -16,7 +16,7 @@ WebSocketsClient webSocket;
 
 bool authenticated = false;
 unsigned long lastSendTime = 0;
-bool newPing = false; // set when a server message comes in, cleared when the state machine reads it
+int commandedState = 0; // 1-7 when server sends us a command, 0 = none
 
 void webSocketEvent( WStype_t type, uint8_t* payload, 
                     size_t length) 
@@ -51,13 +51,15 @@ void webSocketEvent( WStype_t type, uint8_t* payload,
         Serial.println("Authentication failed");
       }
 
-      // Only messages for us (containing our ID) count as a ping, so other teams' traffic
-      // is ignored. Login messages never count ("authenticat" catches both
-      // "authentication_required" and "authenticated").
-      if (message.indexOf(CLIENT_ID) >= 0 &&
-          message.indexOf("authenticat") < 0 &&
-          message.indexOf("\"error\"") < 0) {
-        newPing = true;
+      // Command = "BITBANGER123:STATE:n" (n = 1-7) anywhere in server's message.
+      // Other teams' web traffic don't have our ID, so it's ignored.
+      String cmd = String(CLIENT_ID) + ":STATE:";
+      int at = message.indexOf(cmd);
+      if (at >= 0) {
+        char n = message.charAt(at + cmd.length());
+        if (n >= '1' && n <= '7') {
+          commandedState = n - '0';
+        }
       }
 
       break;
@@ -115,11 +117,19 @@ void webSocket_loop() {
   webSocket.loop();
 }
 
-// True once for each new server message, so one message = one state change
-bool webSocket_ping_received() {
-  if (newPing) {
-    newPing = false;
-    return true;
+// 1-7 once for each command from server, 0 if there's no new one
+int webSocket_get_command() {
+  int n = commandedState;
+  commandedState = 0;
+  return n;
+}
+
+// Post a "go to state n" command to server, e.g. "BITBANGER123:STATE:5"
+bool webSocket_send_state(int state) {
+  if (!authenticated) {
+    return false;
   }
-  return false;
+  String cmd = String(CLIENT_ID) + ":STATE:" + state;
+  webSocket.sendTXT(cmd);
+  return true;
 }

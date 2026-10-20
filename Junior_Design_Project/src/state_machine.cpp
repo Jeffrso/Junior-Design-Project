@@ -2,7 +2,10 @@
 #include <Arduino.h>
 #include "state_machine.h"
 #include "web.h"
-#include "sevenSeg.h"
+
+const uint8_t RGB_LED_PIN = 38; // built-in RGB LED
+const unsigned long FLASH_MS = 200; // each flash is on then off for this long
+const unsigned long PAUSE_MS = 1000; // dark gap before flashes repeat
 
 // In the order the robot goes through:
 typedef enum {
@@ -12,120 +15,103 @@ typedef enum {
     STATE_FIND_LANE,        // 4
     STATE_LANE_FOLLOW,      // 5
     STATE_TURN,             // 6
-    STATE_DRIVE,            // 7
-    STATE_RETURN_HOME       // 8
+    STATE_RETURN_HOME,      // 7
+    NUM_STATES              // = 7 (count, not state)
 } RobotState;
 
-// For global state whatev
+const char* STATE_NAMES[NUM_STATES] = {
+    "initialize", "idle", "drive wall turn", "find lane",
+    "lane follow", "turn", "return home"
+};
+
+// LED color for each state
+const uint8_t STATE_COLORS[NUM_STATES][3] = {
+    {50, 0, 0}, // 1 red
+    {0, 50, 0}, // 2 green
+    {0, 0, 50}, // 3 blue
+    {50, 50, 0}, // 4 yellow
+    {0, 50, 50}, // 5 cyan
+    {50, 0, 50}, // 6 purple
+    {50, 50, 50} // 7 white
+};
+
 RobotState currentState = STATE_INITIALIZE;
+unsigned long stateStartMs = 0; // when we entered current state
 
-//function stuff
-bool externalSignal();
-void stateMachineUpdate();
-void ledOn(int number);
+// Set by interrupt handler, cleared by stateMachineUpdate()
+volatile bool enterPressed = false;
+volatile char typedChar = 0; // key typed before Enter (0 = just Enter)
 
-// NEED SOME INITIALIZATION STUFF HERE
-
-// True once for each ping from the websocket server, so each ping moves us to the next state
-bool externalSignal(){
-    if (TEST_MODE) {
-        // fake a ping every TEST_PING_MS so we can watch it cycle through the states
-        static unsigned long lastPing = 0;
-        if (millis() - lastPing >= TEST_PING_MS) {
-            lastPing = millis();
-            return true;
+// Interrupt handler: USB serial receive interrupt calls this when keys arrive,
+// so loop() never has to poll Serial. (Only sets flags)
+void onSerialReceive(void* arg, esp_event_base_t base, int32_t id, void* data) {
+    static char lastChar = 0;
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n') {
+            typedChar = lastChar;
+            lastChar = 0;
+            enterPressed = true;
+        } else if (c != '\r') {
+            lastChar = c;
         }
-        return false;
     }
-    return webSocket_ping_received();
 }
 
-void ledOn(int number){
-    uint8_t segs = sevenseg_decode(number);
-    if (SEG_ACTIVE_LOW) {
-        segs = ~segs;   // lookup table is 1 = on (common cathode), flip it for common anode
-    }
+// State N: flash N times, pause, and repeat
+void showState() {
+    static int lastShown = -1; // only write to LED when it changes
+    int n = currentState + 1;
+    unsigned long flashTime = n * 2 * FLASH_MS; // n flashes, each on then off
+    unsigned long t = (millis() - stateStartMs) % (flashTime + PAUSE_MS);
+    bool on = (t < flashTime) && ((t / FLASH_MS) % 2 == 0);
 
-    for (int i = 0; i < 7; i++) {
-        bool bit_val = (segs >> (6 - i)) & 0x01;
-        digitalWrite(SEG_PINS[i], bit_val);
+    int shown = on ? n : 0; // 0 = LED off
+    if (shown != lastShown) {
+        lastShown = shown;
+        if (on) {
+            const uint8_t* c = STATE_COLORS[currentState];
+            neopixelWrite(RGB_LED_PIN, c[0], c[1], c[2]);
+        } else {
+            neopixelWrite(RGB_LED_PIN, 0, 0, 0);
+        }
     }
+}
+
+void goToState(int index, const char* reason) {
+    currentState = (RobotState)index;
+    stateStartMs = millis(); // restart flash pattern
+    Serial.printf("%s -> state %d (%s)\n", reason, index + 1, STATE_NAMES[index]);
+}
+
+void stateMachineSetup() {
+    Serial.onEvent(ARDUINO_HW_CDC_RX_EVENT, onSerialReceive);
 }
 
 void stateMachineUpdate() {
-    switch (currentState) {
-        case STATE_INITIALIZE:
-        ledOn(1);
+    // 1. Enter key (external signal)
+    if (enterPressed) {
+        char c = typedChar;
+        enterPressed = false;
 
-            if(externalSignal()) {
-                Serial.println("init to idle");
-                currentState = STATE_IDLE;
+        if (c == 0) {
+            goToState((currentState + 1) % NUM_STATES, "Enter");   // 7 wraps to 1
+        } else if (c >= '1' && c <= '7') {
+            if (webSocket_send_state(c - '0')) {
+                Serial.printf("posted state %c command, waiting for the server...\n", c);
+            } else {
+                Serial.println("not connected to the server yet");
             }
-            break;
-        case STATE_IDLE:
-        ledOn(2);
-
-            if(externalSignal()) {
-                Serial.println("idle to drive wall turn");
-                currentState = STATE_DRIVE_WALL_TURN;
-            }
-
-            break;
-        case STATE_DRIVE_WALL_TURN:
-        ledOn(3);
-
-            if(externalSignal()) {
-                Serial.println("drive wall turn to find lane");
-                currentState = STATE_FIND_LANE;
-            }
-
-            break;
-        case STATE_FIND_LANE:
-        ledOn(4);
-
-            if(externalSignal()) {
-                Serial.println("find lane to follow lane");
-                currentState = STATE_LANE_FOLLOW;
-            }
-            break;
-        case STATE_LANE_FOLLOW:
-        ledOn(5);
-
-            if(externalSignal()) {
-                Serial.println("lane follow to turn");
-                currentState = STATE_TURN;
-            }
-            break;
-        case STATE_TURN:
-        ledOn(6);
-
-            if(externalSignal()) {
-                Serial.println("turn to drive");
-                currentState = STATE_DRIVE;
-            }
-
-            break;
-        // COULD REMOVE THEDRIVE STATE AND JUST HAVE RETURN HOME?????????
-        case STATE_DRIVE:
-        ledOn(7);
-
-            if(externalSignal()) {
-                Serial.println("drive to return home");
-                currentState = STATE_RETURN_HOME;
-            }
-            break;
-        case STATE_RETURN_HOME:
-        ledOn(8);
-
-            if(externalSignal()) {
-                Serial.println("return home to idle");
-                currentState = STATE_IDLE;
-            }
-
-            break;
-        default:
-            currentState = STATE_IDLE;
-            break;
-
+        } else {
+            Serial.println("press Enter for the next state, or type 1-7 then Enter");
+        }
     }
+
+    // 2. Websocket command: jump straight to that state
+    int n = webSocket_get_command();
+    if (n != 0) {
+        goToState(n - 1, "websocket");
+    }
+
+    showState(); // flash LED to show which state we're in
 }

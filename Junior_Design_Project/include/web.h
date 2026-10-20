@@ -10,6 +10,7 @@ void webSocket_ini();
 void webSocket_send_message(char *message);
 String get_message();
 void webSocket_loop();
-bool webSocket_ping_received();
+int webSocket_get_command(); // 1-7 once per command from server, 0 = none
+bool webSocket_send_state(int state); // posts "BITBANGER123:STATE:<state>", false if not logged in
 
 #endif

@@ -12,7 +12,7 @@ const uint8_t IR_LED_PIN_2 = 16;
 const uint8_t IR_SENSE_PIN = 7; // ADC1 pin
 
 // true = bench test (no WiFi / no state machine, prints sensor 10 times a second)
-const bool COLLISION_TEST_MODE = true;
+const bool COLLISION_TEST_MODE = false;
 
 void irSensorSetup(); // call once in setup() & also takes baseline
 bool collisionUpdate(); // call every loop(): takes reading, returns true while an obstacle is too close
