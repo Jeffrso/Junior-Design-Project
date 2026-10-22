@@ -17,6 +17,7 @@ WebSocketsClient webSocket;
 bool authenticated = false;
 unsigned long lastSendTime = 0;
 int commandedState = 0; // 1-7 when server sends us a command, 0 = none
+int commandedMove = -1; // 0-6 when server sends us a MOVE command, -1 = none
 
 void webSocketEvent( WStype_t type, uint8_t* payload, 
                     size_t length) 
@@ -59,6 +60,16 @@ void webSocketEvent( WStype_t type, uint8_t* payload,
         char n = message.charAt(at + cmd.length());
         if (n >= '1' && n <= '7') {
           commandedState = n - '0';
+        }
+      }
+
+      // Motion command = "BITBANGER123:MOVE:m" (m = 0-6), for motion_states.cpp
+      String moveCmd = String(CLIENT_ID) + ":MOVE:";
+      int moveAt = message.indexOf(moveCmd);
+      if (moveAt >= 0) {
+        char m = message.charAt(moveAt + moveCmd.length());
+        if (m >= '0' && m <= '6') {
+          commandedMove = m - '0';
         }
       }
 
@@ -130,6 +141,23 @@ bool webSocket_send_state(int state) {
     return false;
   }
   String cmd = String(CLIENT_ID) + ":STATE:" + state;
+  webSocket.sendTXT(cmd);
+  return true;
+}
+
+// 0-6 once for each MOVE command from server, -1 if there's no new one
+int webSocket_get_move() {
+  int m = commandedMove;
+  commandedMove = -1;
+  return m;
+}
+
+// Post a "do motion m" command to server, e.g. "BITBANGER123:MOVE:1"
+bool webSocket_send_move(int move) {
+  if (!authenticated) {
+    return false;
+  }
+  String cmd = String(CLIENT_ID) + ":MOVE:" + move;
   webSocket.sendTXT(cmd);
   return true;
 }

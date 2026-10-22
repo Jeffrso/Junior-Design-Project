@@ -1,3 +1,5 @@
+#if 0
+
 #include "distance.h"
 
 typedef enum {
@@ -83,3 +85,5 @@ void stateMachineUpdate() {
       break;
   }
 }
+
+#endif
