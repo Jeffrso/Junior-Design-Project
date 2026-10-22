@@ -4,6 +4,7 @@
 #include "web.h"
 #include "distance.h"
 #include "motor_driver.h"
+#include "distancedemo.h"
 
 void setup() {
   Serial.begin(115200);
@@ -29,6 +30,12 @@ void setup() {
 }
 
 void loop() {
+  if (STATE_TEST_MODE) {
+      updateState(); 
+      collisionTestLoop();// Runs your entire state machine loop (reads sensor + runs motors)
+      return;
+    }
+
   if (COLLISION_TEST_MODE) {
     collisionTestLoop(); // prints sensor data
     return;
@@ -42,6 +49,7 @@ void loop() {
   if (!TEST_MODE) {
     webSocket_loop(); // check for new pings from server
   }
+
   collisionUpdate(); // keep obstacle decision up to date (obstacleAhead())
   if (MOTION_MODE) {
     motionUpdate(); // Enter = next motion, websocket MOVE command = jump to that motion
