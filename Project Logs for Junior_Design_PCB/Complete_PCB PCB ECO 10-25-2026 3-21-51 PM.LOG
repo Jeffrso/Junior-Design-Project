@@ -1,0 +1,2 @@
+Change Net Name : Old Net Name=MOTOR_GND New Net Name=ESP_GND
+Added Rule: Name=Schematic Supply Nets
