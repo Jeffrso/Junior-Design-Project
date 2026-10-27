@@ -1,0 +1,6 @@
+Removed Pin From Net: NetName=ESP_3V3 Pin=LED1-3
+Removed Pin From Net: NetName=ESP_3V3 Pin=LED2-3
+Removed Pin From Net: NetName=ESP_3V3 Pin=LED3-3
+Added Pin To Net: NetName=ESP_GND Pin=LED1-3
+Added Pin To Net: NetName=ESP_GND Pin=LED2-3
+Added Pin To Net: NetName=ESP_GND Pin=LED3-3
