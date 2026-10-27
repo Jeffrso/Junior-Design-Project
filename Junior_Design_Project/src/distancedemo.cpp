@@ -15,21 +15,14 @@ static unsigned long reverseStartTime = 0;
 const unsigned long REVERSE_DURATION_MS = 1000; // Back up for 1 second
 
 static void setStop() {
-    analogWrite(FORWARD, 0);
-    analogWrite(REVERSE, 0);
-    analogWrite(FORWARD_2, 0);
-    analogWrite(REVERSE_2, 0);
-    digitalWrite(FORWARD, LOW);
-    digitalWrite(REVERSE, LOW);
-    digitalWrite(FORWARD_2, LOW);
-    digitalWrite(REVERSE_2, LOW);
+    drive_forward(0, 0);
+    drive_forward(1, 0);
 }
 
 void updateState() {
-
     collisionUpdate();
 
-    if(obstacleAhead()) {
+    if (obstacleAhead()) {
         if(current != D_REVERSE) {
           current = STOP;
         }
@@ -46,9 +39,9 @@ void updateState() {
 
     break;
     case D_FORWARD:
-    drive_reverse(1, 100);
-    drive_reverse(0, 100);
-        if(collisionUpdate()) {
+    drive_forward(1, 100);
+    drive_forward(0, 100);
+        if (collisionUpdate()) {
             current = STOP;
         }
 
