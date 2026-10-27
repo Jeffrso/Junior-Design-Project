@@ -1,0 +1,4 @@
+Change Footprint: Footprint Not Found RESA60-630X240
+Change Managed Component Library Link : Designator=R7 Old VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 New VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 Old ItemGUID=A7752A51-3F5E-4298-A54C-C4AC008B0F72 New ItemGUID=E019FBC8-F958-4EDC-A14B-CD657852FDA6 Old RevisionGUID=5C6DE716-6D5C-4769-90B2-5513E30959CA New RevisionGUID=CBC4E9B3-4DA6-4068-B67F-44EA34E920DD
+Change component parameters: Designator = "R7" ("R7"); Footprint = "RESA60-630X240"; UniqueID = "\XNLIXFGZ" ("\XNLIXFGZ")
+Change component parameters (AddParameter): Name = "RoHS Compliant"; Value = "Yes"; VariantName = "[No Variations]"
