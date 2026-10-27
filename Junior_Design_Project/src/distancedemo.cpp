@@ -39,25 +39,27 @@ void updateState() {
     case STOP:
     // motors to 0
     setStop();
-    delay(500);
+    delay(150);
     // maybe a delay here
     reverseStartTime = millis();
     current = D_REVERSE;
 
     break;
     case D_FORWARD:
-    drive_forward(1, 100);
-    drive_forward(0, 100);
+    drive_reverse(1, 100);
+    drive_reverse(0, 100);
         if(collisionUpdate()) {
             current = STOP;
         }
 
     break;
     case D_REVERSE:
-    drive_reverse(1, 100);
-    drive_reverse(0, 100);
+    drive_forward(1, 100);
+    drive_forward(0, 100);
 
     if (millis() - reverseStartTime >= REVERSE_DURATION_MS) {
+                    setStop();
+                    delay(100);
                 // check if the path is clear now
                 if (!obstacleAhead()) {
                     current = D_FORWARD; // Safe to resume normal driving!

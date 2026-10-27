@@ -5,7 +5,7 @@
 // 3. Signal above THRESHOLD_MV = obstacle. Reflection falls off as 1/d^2, so threshold sets stop distance
 #include "distance.h"
 
-const int THRESHOLD_MV = 5; // signal (mV) with the wall at stop distance
+const int THRESHOLD_MV = 4; // signal (mV) with the wall at stop distance
 const int PAIRS = 8; // on/off pairs per reading (16 ms, averages out light flicker)
 const int SETTLE_US = 1000; // let photodiode settle after switching LEDs
 
