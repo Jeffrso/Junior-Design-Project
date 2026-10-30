@@ -1,0 +1,95 @@
+Removed Pin From Net: NetName=MOTOR_V Pin=P1-1
+Removed Pin From Net: NetName=ESP_GND Pin=P1-2
+Removed Pin From Net: NetName=IO20 Pin=P1-3
+Removed Pin From Net: NetName=ESP_RST Pin=P1-4
+Removed Pin From Net: NetName=IO48 Pin=P1-6
+Removed Pin From Net: NetName=IO44 Pin=P1-7
+Removed Pin From Net: NetName=IO47 Pin=P1-8
+Removed Pin From Net: NetName=IO43 Pin=P1-9
+Removed Pin From Net: NetName=IO46 Pin=P1-10
+Removed Pin From Net: NetName=IO42 Pin=P1-11
+Removed Pin From Net: NetName=IO37 Pin=P1-12
+Removed Pin From Net: NetName=IO41 Pin=P1-13
+Removed Pin From Net: NetName=IO36 Pin=P1-14
+Removed Pin From Net: NetName=IO40 Pin=P1-15
+Removed Pin From Net: NetName=IO35 Pin=P1-16
+Removed Pin From Net: NetName=IO39 Pin=P1-17
+Removed Pin From Net: NetName=IO3 Pin=P1-18
+Removed Pin From Net: NetName=ESP_5V Pin=P1-19
+Removed Pin From Net: NetName=IO0 Pin=P1-20
+Removed Pin From Net: NetName=M2_B Pin=P2-1
+Removed Pin From Net: NetName=M2_A Pin=P2-2
+Removed Pin From Net: NetName=M1_B Pin=P2-3
+Removed Pin From Net: NetName=M1_A Pin=P2-4
+Change Component Footprint: Designator=P1 Old Footprint=SMTC-LTMM-110-02-X-D-RA New Footprint=61202621621
+Change Component Comment : Designator=P1 Old Comment=LTMM-110-02-F-D-RA New Comment=61202621621
+Change Managed Component Library Link : Designator=P1 Old VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 New VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 Old ItemGUID=717350C3-5B74-4916-947D-9DF9B9BC100E New ItemGUID=B1B66E17-D657-4955-B915-4753FCDE5740 Old RevisionGUID=59543DF6-6515-4C51-9337-B697D2124148 New RevisionGUID=6775A5F4-C932-4153-9FB3-EE5F14D5611A
+Change component parameters: Designator = "P1" ("P1"); Footprint = "SMTC-LTMM-110-02-X-D-RA"; UniqueID = "\JTRPQBSG" ("\JTRPQBSG")
+Change component parameters (AddParameter): Name = "Color"; Value = "Black"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Connector Type"; Value = "Male Pin"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Gender"; Value = "Male"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Material"; Value = "Gold"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Plating"; Value = "Gold"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Contact Resistance"; Value = "20mO"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Current Rating"; Value = "3A"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Flammability Rating"; Value = "UL94 V-0"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Gender"; Value = "Male"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Height"; Value = "9.25mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Housing Material"; Value = "PBT"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Insulation Material"; Value = "PBT"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Insulation Resistance"; Value = "1GO"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Lead Pitch"; Value = "2.54mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Length"; Value = "40.68mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Max Operating Temperature"; Value = "105°C"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Min Operating Temperature"; Value = "-40°C"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Mount"; Value = "Through Hole"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Number of Contacts"; Value = "26"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Number of Pins"; Value = "26"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Number of Positions"; Value = "26"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Number of Rows"; Value = "2"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Operating Supply Voltage"; Value = "250V"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Orientation"; Value = "Vertical"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Pitch"; Value = "2.54mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "RoHS"; Value = "Compliant"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Row Spacing"; Value = "2.54mm"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Termination"; Value = "Solder"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Voltage Rating"; Value = "250V"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Voltage Rating (DC)"; Value = "250V"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Width"; Value = "40.68mm"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=IO0 Pin=P1-1
+Added Pin To Net: NetName=IO40 Pin=P1-2
+Added Pin To Net: NetName=IO3 Pin=P1-3
+Added Pin To Net: NetName=IO41 Pin=P1-4
+Added Pin To Net: NetName=IO42 Pin=P1-6
+Added Pin To Net: NetName=IO20 Pin=P1-7
+Added Pin To Net: NetName=IO43 Pin=P1-8
+Added Pin To Net: NetName=IO35 Pin=P1-9
+Added Pin To Net: NetName=IO44 Pin=P1-10
+Added Pin To Net: NetName=IO36 Pin=P1-11
+Added Pin To Net: NetName=IO46 Pin=P1-12
+Added Pin To Net: NetName=IO37 Pin=P1-13
+Added Pin To Net: NetName=IO47 Pin=P1-14
+Added Pin To Net: NetName=IO39 Pin=P1-15
+Added Pin To Net: NetName=IO48 Pin=P1-16
+Added Pin To Net: NetName=ESP_GND Pin=P1-17
+Added Pin To Net: NetName=ESP_5V Pin=P1-18
+Added Pin To Net: NetName=ESP_GND Pin=P1-19
+Added Pin To Net: NetName=MOTOR_V Pin=P1-20
+Added Pin To Net: NetName=ESP_GND Pin=P1-22
+Added Pin To Net: NetName=ESP_GND Pin=P1-23
+Added Pin To Net: NetName=DIST_SENSE Pin=P1-25
+Added Pin To Net: NetName=ESP_GND Pin=P1-26
+Added Pin To Net: NetName=M1_A Pin=P2-1
+Added Pin To Net: NetName=M1_B Pin=P2-2
+Added Pin To Net: NetName=M2_A Pin=P2-3
+Added Pin To Net: NetName=M2_B Pin=P2-4
+Change Net Name : Old Net Name=ESP_GND New Net Name=D2_OUT
+Added Pin To Net: NetName=D2_IN Pin=D2-2
+Added Pin To Net: NetName=D2_IN Pin=P1-24
+Added Pin To Net: NetName=D2_IN Pin=R4-2
+Added Net: Name=D2_IN
+Added Pin To Net: NetName=D3_IN Pin=D3-2
+Added Pin To Net: NetName=D3_IN Pin=P1-21
+Added Pin To Net: NetName=D3_IN Pin=R5-2
+Added Net: Name=D3_IN
+Added Rule: Name=Schematic Supply Nets_1

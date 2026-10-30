@@ -1,0 +1,43 @@
+Removed Pin From Net: NetName=V_SENSE Pin=R8-1
+Removed Pin From Net: NetName=ESP_5V Pin=R8-2
+Removed Member From Class: ClassName=Vehicle_Circuit Member=R8
+Added Component: Designator=P1(691701540008B)
+Add component (AddParameter): Name = "Color"; Value = "Black"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Connector Type"; Value = "Terminal Block"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Contact Material"; Value = "Brass"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Contact Plating"; Value = "Tin"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Current Rating"; Value = "10A"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Gender"; Value = "Male"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Housing Material"; Value = "Polymer"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Lead Pitch"; Value = "5.08mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Mount"; Value = "Through Hole"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Number of Contacts"; Value = "8"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Number of Pins"; Value = "8"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Packaging"; Value = "Tape and Reel"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "REACH SVHC"; Value = "Unknown"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RoHS"; Value = "Compliant"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Termination"; Value = "PCB"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Voltage Rating"; Value = "300V"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=ESP_GND Pin=P1-8
+Added Pin To Net: NetName=IO35 Pin=P1-1
+Added Pin To Net: NetName=IO35 Pin=U2-J3_13
+Added Net: Name=IO35
+Added Pin To Net: NetName=IO36 Pin=P1-2
+Added Pin To Net: NetName=IO36 Pin=U2-J3_12
+Added Net: Name=IO36
+Added Pin To Net: NetName=IO37 Pin=P1-3
+Added Pin To Net: NetName=IO37 Pin=U2-J3_11
+Added Net: Name=IO37
+Added Pin To Net: NetName=IO39 Pin=P1-7
+Added Pin To Net: NetName=IO39 Pin=U2-J3_9
+Added Net: Name=IO39
+Added Pin To Net: NetName=IO46 Pin=P1-4
+Added Pin To Net: NetName=IO46 Pin=U2-J1_14
+Added Net: Name=IO46
+Added Pin To Net: NetName=IO47 Pin=P1-5
+Added Pin To Net: NetName=IO47 Pin=U2-J3_17
+Added Net: Name=IO47
+Added Pin To Net: NetName=IO48 Pin=P1-6
+Added Pin To Net: NetName=IO48 Pin=U2-J3_16
+Added Net: Name=IO48
+Added Member To Class: ClassName=Vehicle_Circuit Member=Component P1 691701540008B
