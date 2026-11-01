@@ -5,55 +5,45 @@
 #include "distance.h"
 #include "motor_driver.h"
 #include "distancedemo.h"
+#include "color_sense.h"
 
 void setup() {
-  Serial.begin(115200);
-  unsigned long serialWaitStart = millis();
-  while (!Serial && millis() - serialWaitStart < 3000) {
-    delay(10); // wait up to 3 s for serial monitor so startup prints aren't lost
-  }
-  Serial.println("\n=== boot ===");
-  motorSetup();
-  irSensorSetup();
+  Serial.begin(9600);
 
-  if (COLLISION_TEST_MODE || MOTOR_TEST_MODE) {
-    return; // bench tests don't need WiFi
-  }
-  if (MOTION_MODE) {
-    motionSetup(); // bot motions milestone (motion_states.cpp)
-  } else {
-    stateMachineSetup(); // state machine milestone (state_machine.cpp)
-  }
-  if (!TEST_MODE) {
-    webSocket_ini(); // test mode doesn't need WiFi
-  }
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(RED_OUT, OUTPUT);
+  pinMode(BLUE_OUT, OUTPUT);
+  pinMode(YELLOW_OUT, OUTPUT);
+  pinMode(COLOR_SENSOR, INPUT);
+  pinMode(BATTERY_IN, INPUT);
+
+
 }
 
+
 void loop() {
-  if (STATE_TEST_MODE) {
-      updateState(); 
-      collisionTestLoop();// Runs your entire state machine loop (reads sensor + runs motors)
-      return;
-    }
 
-  if (COLLISION_TEST_MODE) {
-    collisionTestLoop(); // prints sensor data
-    return;
-  }
-  if (MOTOR_TEST_MODE) {
-    drive_forward(0, 200); // both motors forward
-    drive_forward(1, 200);
-    delay(500);
-    return;
-  }
-  if (!TEST_MODE) {
-    webSocket_loop(); // check for new pings from server
-  }
+  float voltage_value = 0;
 
-  collisionUpdate(); // keep obstacle decision up to date (obstacleAhead())
-  if (MOTION_MODE) {
-    motionUpdate(); // Enter = next motion, websocket MOVE command = jump to that motion
-  } else {
-    stateMachineUpdate(); // Enter = next state, websocket STATE command = jump to that state
+  while(1) {
+
+    uint8_t rby_pins[3] = {RED_PIN, GREEN_PIN, BLUE_PIN};
+    Colors color = read_color(COLOR_SENSOR, rby_pins);
+
+      Serial.print("DETECTED: ");
+      if (color == RED_t) {
+        Serial.println("RED");
+      } else if (color == BLUE_t) {
+         Serial.println("BLUE");
+      } else if (color == YELLOW_t) {
+          Serial.println("YELLOW");
+      } else {
+          Serial.println("BLACK");
+      }
+
+    delay(1000);
+
   }
 }
