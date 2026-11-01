@@ -8,20 +8,6 @@ const float YELLOW_CAL[3] = {0.95, 1.73, 0.77};
 const float BLACK_CAL[3] = {0.06, 0.12, 0.22};
 float brightness_offset = 0;
 
-void setup() {
-  Serial.begin(9600);
-
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(RED_OUT, OUTPUT);
-  pinMode(BLUE_OUT, OUTPUT);
-  pinMode(YELLOW_OUT, OUTPUT);
-  pinMode(COLOR_SENSOR, INPUT);
-  pinMode(BATTERY_IN, INPUT);
-
-
-}
 
 
 float distance_squared(float *read_value, const float *ref_value) {
@@ -108,27 +94,3 @@ void print_LED(Colors color) {
 }
 
 
-void loop() {
-
-  float voltage_value = 0;
-
-  while(1) {
-
-    uint8_t rby_pins[3] = {RED_PIN, GREEN_PIN, BLUE_PIN};
-    Colors color = read_color(COLOR_SENSOR, rby_pins);
-
-      Serial.print("DETECTED: ");
-      if (color == RED_t) {
-        Serial.println("RED");
-      } else if (color == BLUE_t) {
-         Serial.println("BLUE");
-      } else if (color == YELLOW_t) {
-          Serial.println("YELLOW");
-      } else {
-          Serial.println("BLACK");
-      }
-
-    delay(1000);
-
-  }
-}
