@@ -1,15 +1,4 @@
-#define COLOR_SENSOR A0
-#define R_BITS 10
-#define MAX_VOLTS 5
-#define RED_PIN 2
-#define BLUE_PIN 3
-#define GREEN_PIN 4
-#define RED_OUT 6
-#define BLUE_OUT 7
-#define YELLOW_OUT 5
-#define DEFAULT_SAMPLE 10
-#define BATTERY_IN 11
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+#include "color_sense.h"
 
 
 
@@ -17,7 +6,7 @@ const float RED_CAL[3] = {0.35, 0.17, 0.26};
 const float BLUE_CAL[3] = {0.12, 0.83, 2.11};
 const float YELLOW_CAL[3] = {0.95, 1.73, 0.77};
 const float BLACK_CAL[3] = {0.06, 0.12, 0.22};
-
+float brightness_offset = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -64,8 +53,8 @@ float average_color_read(uint8_t pin, uint8_t sample_size) {
 }
 
 
-float calibrate_color_sensor(uint8_t pin) {
-      return average_color_read(pin, DEFAULT_SAMPLE);
+void calibrate_color_sensor(uint8_t pin) {
+      brightness_offset = average_color_read(pin, DEFAULT_SAMPLE);
 }
 
 
