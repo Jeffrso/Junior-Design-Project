@@ -1,13 +1,23 @@
 #include "color_sense.h"
 
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#define DEFAULT_SAMPLE 10
 
-
-const float RED_CAL[3] = {0.35, 0.17, 0.26};
-const float BLUE_CAL[3] = {0.12, 0.83, 2.11};
-const float YELLOW_CAL[3] = {0.95, 1.73, 0.77};
-const float BLACK_CAL[3] = {0.06, 0.12, 0.22};
+const float RED_CAL[3] = {0.4020, 0.1560, 0.3600};
+const float BLUE_CAL[3] = {0.3057, 0.8271, 1.9550};
+const float YELLOW_CAL[3] = {1.2367, 1.5333, 1.1333};
+const float BLACK_CAL[3] = {0.0767, 0.1183, 0.2600};
 float brightness_offset = 0;
+bool color_change = false;
 
+
+void init_color_sensor() {
+        //LEDs for sensor
+        pinMode(BLUE_PIN, OUTPUT);
+        pinMode(RED_PIN, OUTPUT);
+        pinMode(GREEN_PIN, OUTPUT);
+        pinMode(COLOR_SENSOR, INPUT);
+}
 
 
 float distance_squared(float *read_value, const float *ref_value) {
@@ -31,10 +41,14 @@ float average_color_read(uint8_t pin, uint8_t sample_size) {
           raw_value = analogRead(pin);
           sensor_val = ((float)raw_value / ((1 << R_BITS) - 1)) * MAX_VOLTS;
           average_read += sensor_val;
-          delay(10);
+          delay(1);
       }
 
       average_read = average_read / sample_size;
+      if (average_read < 0) {
+        return 0;
+      } 
+
       return average_read;
 }
 
@@ -45,17 +59,13 @@ void calibrate_color_sensor(uint8_t pin) {
 
 
 Colors read_color(uint8_t pin, uint8_t *rby_pins) {
-        uint16_t raw_value = 0;
-        Colors color;
-        //values ordered (red, blue, yellow)
-        char *ORDERING[3] = {"RED ", "GREEN ","BLUE "}; //used for debugging
 
         float voltage_values[3] = {0};
         for (int i = 0; i < 3; i++) {
                 digitalWrite(rby_pins[i], HIGH);
-                voltage_values[i] = average_color_read(pin, DEFAULT_SAMPLE);
+                voltage_values[i] = average_color_read(pin, DEFAULT_SAMPLE) - brightness_offset;
                 digitalWrite(rby_pins[i], LOW);
-                delay(100);
+                delay(2);
         }
       
 
@@ -71,26 +81,4 @@ Colors read_color(uint8_t pin, uint8_t *rby_pins) {
         else if (dy == min_distance) return YELLOW_t;
         else return BLACK_t;
 }
-
-
-void print_LED(Colors color) {
-   if (color == RED_t) {
-     digitalWrite(RED_OUT, HIGH);
-     digitalWrite(YELLOW_OUT, LOW);
-     digitalWrite(BLUE_OUT, LOW);
-   } else if (color == BLUE_t) {
-     digitalWrite(RED_OUT, LOW);
-     digitalWrite(YELLOW_OUT, LOW);
-     digitalWrite(BLUE_OUT, HIGH);
-   } else if (color == YELLOW_t) {
-     digitalWrite(RED_OUT, LOW);
-     digitalWrite(YELLOW_OUT, HIGH);
-     digitalWrite(BLUE_OUT, LOW);
-   } else {
-     digitalWrite(RED_OUT, LOW);
-     digitalWrite(YELLOW_OUT, LOW);
-     digitalWrite(BLUE_OUT, LOW);
-   }
-}
-
 
