@@ -7,12 +7,12 @@
 #pragma once
 #include <Arduino.h>
 
-const uint8_t IR_LED_PIN = 17;
-const uint8_t IR_LED_PIN_2 = 16;
-const uint8_t IR_SENSE_PIN = 7; // ADC1 pin
+const uint8_t IR_LED_PIN = 4; // IR_IN_1 (D2)
+const uint8_t IR_LED_PIN_2 = 5; // IR_IN_2 (D3)
+const uint8_t IR_SENSE_PIN = 6; // DIST_SENSE (Q4), ADC1 pin
 
 // true = bench test (no WiFi / no state machine, prints sensor 10 times a second)
-const bool COLLISION_TEST_MODE = false;
+const bool COLLISION_TEST_MODE = true;
 
 void irSensorSetup(); // call once in setup() & also takes baseline
 bool collisionUpdate(); // call every loop(): takes reading, returns true while an obstacle is too close

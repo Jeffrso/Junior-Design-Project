@@ -1,69 +1,71 @@
-#include <Adafruit_NeoPixel.h>
+#include <Arduino.h>
+#include "state_machine.h"
+#include "motion_states.h"
 #include "web.h"
+#include "distance.h"
+#include "motor_driver.h"
+#include "distancedemo.h"
 #include "color_sense.h"
-
-//RBG OUTPUTS FOR DEBUGGING
-#define RED_OUT 19
-#define BLUE_OUT 20
-#define GREEN_OUT 21 
-
-#define BATTERY_IN 36
-
+#include "lane_follow.h"
 
 void setup() {
-        Serial.begin(9600);
-        init_color_sensor();
-  //OUTPUT LEDS
-        pinMode(BLUE_OUT, OUTPUT);
-        pinMode(RED_OUT, OUTPUT);
-        pinMode(GREEN_OUT, OUTPUT);
-        pinMode(BATTERY_IN, INPUT);
-  // webSocket_ini();
-  
-}
+  Serial.begin(115200);
+  unsigned long serialWaitStart = millis();
+  while (!Serial && millis() - serialWaitStart < 3000) {
+    delay(10); // wait up to 3 s for serial monitor so startup prints aren't lost
+  }
+  Serial.println("\n=== boot ===");
+  motorSetup();
+  colorSetup(); // color sensor LEDs off before IR baseline is taken
+  irSensorSetup();
 
-void print_LED(Colors color) {
-        if (color == RED_t) {
-                digitalWrite(RED_OUT, HIGH);
-                digitalWrite(GREEN_OUT, LOW);
-                digitalWrite(BLUE_OUT, LOW);
-        } else if (color == BLUE_t) {
-                digitalWrite(RED_OUT, LOW);
-                digitalWrite(GREEN_OUT, LOW);
-                digitalWrite(BLUE_OUT, HIGH);
-        } else if (color == YELLOW_t) {
-                digitalWrite(RED_OUT, LOW);
-                digitalWrite(GREEN_OUT, HIGH);
-                digitalWrite(BLUE_OUT, LOW);
-        } else {
-                digitalWrite(RED_OUT, LOW);
-                digitalWrite(GREEN_OUT, LOW);
-                digitalWrite(BLUE_OUT, LOW);
-        }
+  if (COLOR_TEST_MODE || LANE_TEST_MODE || COLLISION_TEST_MODE || MOTOR_TEST_MODE) {
+    return; // bench tests don't need WiFi
+  }
+
+  if (MOTION_MODE) {
+    motionSetup(); // bot motions milestone (motion_states.cpp)
+  } else {
+    stateMachineSetup(); // state machine milestone (state_machine.cpp)
+  }
+
+  if (!TEST_MODE) {
+    webSocket_ini(); // test mode doesn't need WiFi
+  }
 }
 
 void loop() {
-        //color sensor 
-        float voltage_value = 0;
-        Colors color_new = NO_COLOR;
-        Colors color_old = NO_COLOR;
-        uint8_t rby_pins[3] = {RED_PIN, GREEN_PIN, BLUE_PIN};
-        calibrate_color_sensor(COLOR_SENSOR); 
+  if (COLOR_TEST_MODE) {
+    colorTestLoop(); // prints all 3 color sensors, calibration commands
+    return;
+  }
+  if (LANE_TEST_MODE) {
+    laneTestLoop(); // y / r / b + Enter = follow that lane, Enter = stop
+    return;
+  }
+  if (STATE_TEST_MODE) {
+    updateState();
+    collisionTestLoop(); // Runs entire state machine loop (reads sensor + runs motors)
+    return;
+  }
+  if (COLLISION_TEST_MODE) {
+    collisionTestLoop(); // prints sensor data
+    return;
+  }
+  if (MOTOR_TEST_MODE) {
+    drive_forward(0, 200); // both motors forward
+    drive_forward(1, 200);
+    delay(500);
+    return;
+  }
+  if (!TEST_MODE) {
+    webSocket_loop(); // check for new pings from server
+  }
 
-        while(1) {
-                color_new = read_color(COLOR_SENSOR, rby_pins);
-
-                if (color_new != color_old) color_change = true;
-                else color_change = false;
-
-                if (color_change) {
-                        color_new = read_color(COLOR_SENSOR, rby_pins);
-
-                        if (color_new != color_old) {
-                                color_old = color_new;
-                                color_change = false;
-                        }
-                }
-                delay(500);
-        }
+  collisionUpdate(); // keep obstacle decision up to date (obstacleAhead())
+  if (MOTION_MODE) {
+    motionUpdate(); // Enter = next motion, websocket MOVE command = jump to that motion
+  } else {
+    stateMachineUpdate(); // Enter = next state, websocket STATE command = jump to that state
+  }
 }

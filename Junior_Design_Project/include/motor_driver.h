@@ -2,10 +2,10 @@
 #pragma once
 #include <Arduino.h>
 
-#define FORWARD 8 // motor 0
-#define REVERSE 18 // motor 0
-#define FORWARD_2 46 // motor 1
-#define REVERSE_2 3 // motor 1
+#define FORWARD 10 // motor 0 = M1
+#define REVERSE 11 // motor 0
+#define FORWARD_2 12 // motor 1 = M2
+#define REVERSE_2 13 // motor 1
 
 // true = motor bench test (no WiFi / no state machine, both motors forward at 200)
 const bool MOTOR_TEST_MODE = false;
