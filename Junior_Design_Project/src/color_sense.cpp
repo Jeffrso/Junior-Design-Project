@@ -1,40 +1,29 @@
-#define COLOR_SENSOR A0
-#define R_BITS 10
-#define MAX_VOLTS 5
-#define RED_PIN 2
-#define BLUE_PIN 3
-#define GREEN_PIN 4
-#define RED_OUT 6
-#define BLUE_OUT 7
-#define YELLOW_OUT 5
-#define DEFAULT_READS 10
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-
 #include "color_sense.h"
 
-const float RED_CAL[3] = {0.25, 0.25};
-const float BLUE_CAL[3] = {0.5, 0.25};
-const float YELLOW_CAL[3] = {0.8, 0.9};
-const float BLACK_CAL[3] = {0.08, 0.1};
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#define DEFAULT_SAMPLE 10
+
+const float RED_CAL[3] = {0.4020, 0.1560, 0.3600};
+const float BLUE_CAL[3] = {0.3057, 0.8271, 1.9550};
+const float YELLOW_CAL[3] = {1.2367, 1.5333, 1.1333};
+const float BLACK_CAL[3] = {0.0767, 0.1183, 0.2600};
+float brightness_offset = 0;
+bool color_change = false;
 
 
-void colorSenseSetup() {
-  Serial.begin(9600);
-
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(RED_OUT, OUTPUT);
-  pinMode(BLUE_OUT, OUTPUT);
-  pinMode(YELLOW_OUT, OUTPUT);
-  pinMode(COLOR_SENSOR, INPUT);
+void init_color_sensor() {
+        //LEDs for sensor
+        pinMode(BLUE_PIN, OUTPUT);
+        pinMode(RED_PIN, OUTPUT);
+        pinMode(GREEN_PIN, OUTPUT);
+        pinMode(COLOR_SENSOR, INPUT);
 }
 
 
 float distance_squared(float *read_value, const float *ref_value) {
         float distance = 0;
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
                 float difference = (ref_value[i] - read_value[i]);
                 distance += difference * difference;
         }
@@ -42,48 +31,43 @@ float distance_squared(float *read_value, const float *ref_value) {
         return distance;
 }
 
-float average_color_read(uint8_t pin) {
-      float sensor_val[DEFAULT_READS] = {0};
+
+float average_color_read(uint8_t pin, uint8_t sample_size) {
+      float sensor_val = 0;
       uint16_t raw_value = 0;
       float average_read = 0;
 
-       for (int i = 0; i < DEFAULT_READS; i++) {
+       for (int i = 0; i < sample_size; i++) {
           raw_value = analogRead(pin);
-          sensor_val[i] = ((float)raw_value / ((1 << R_BITS) - 1)) * MAX_VOLTS;
+          sensor_val = ((float)raw_value / ((1 << R_BITS) - 1)) * MAX_VOLTS;
+          average_read += sensor_val;
           delay(1);
       }
 
-      for (int i = 0; i < DEFAULT_READS; i++) {
-          average_read += sensor_val[i];
-      }
+      average_read = average_read / sample_size;
+      if (average_read < 0) {
+        return 0;
+      } 
 
-      average_read = average_read / DEFAULT_READS;
       return average_read;
 }
 
-float calibrate_color_sensor(uint8_t pin) {
-      return average_color_read(pin);
+
+void calibrate_color_sensor(uint8_t pin) {
+      brightness_offset = average_color_read(pin, DEFAULT_SAMPLE);
 }
 
+
 Colors read_color(uint8_t pin, uint8_t *rby_pins) {
-        uint16_t raw_value = 0;
-        Colors color;
-        //values ordered (red, blue, yellow)
-        char *ORDERING[2] = {"RED ", "BLUE "}; 
-        float voltage_values[2] = {0};
-        for (int i = 0; i < 2; i++) {
+
+        float voltage_values[3] = {0};
+        for (int i = 0; i < 3; i++) {
                 digitalWrite(rby_pins[i], HIGH);
-                voltage_values[i] = average_color_read(pin);
-                // Serial.println(volts);
-                delay(100);
+                voltage_values[i] = average_color_read(pin, DEFAULT_SAMPLE) - brightness_offset;
                 digitalWrite(rby_pins[i], LOW);
-                delay(100);
+                delay(2);
         }
       
-        for (int i = 0; i < 2; i++) {
-            Serial.print(ORDERING[i]);
-            Serial.println(voltage_values[i]);
-        }
 
         float dr = distance_squared(voltage_values, RED_CAL);
         float db = distance_squared(voltage_values, BLUE_CAL);
@@ -91,8 +75,6 @@ Colors read_color(uint8_t pin, uint8_t *rby_pins) {
         float dd = distance_squared(voltage_values, BLACK_CAL);
 
         float min_distance = min(dy, min(dd, min(dr, db)));
-        // min_distance = min(min_distance, dy);
-        // min_distance = min(min_distance, dd);
 
         if (dr == min_distance) return RED_t;
         else if (db == min_distance) return BLUE_t;
@@ -100,37 +82,3 @@ Colors read_color(uint8_t pin, uint8_t *rby_pins) {
         else return BLACK_t;
 }
 
-void print_LED(Colors color) {
-  if (color == RED_t) {
-    digitalWrite(RED_OUT, HIGH);
-    digitalWrite(YELLOW_OUT, LOW);
-    digitalWrite(BLUE_OUT, LOW);
-  } else if (color == BLUE_t) {
-    digitalWrite(RED_OUT, LOW);
-    digitalWrite(YELLOW_OUT, LOW);
-    digitalWrite(BLUE_OUT, HIGH);
-  } else if (color == YELLOW_t) {
-    digitalWrite(RED_OUT, LOW);
-    digitalWrite(YELLOW_OUT, HIGH);
-    digitalWrite(BLUE_OUT, LOW);
-  } else {
-    digitalWrite(RED_OUT, LOW);
-    digitalWrite(YELLOW_OUT, LOW);
-    digitalWrite(BLUE_OUT, LOW);
-  }
-}
-
-void colorSenseTestLoop() {
-  float voltage_value = 0;
-  while(1) {
-    // uint8_t rby_pins[2] = {RED_PIN, BLUE_PIN};
-    // Colors color = read_color(COLOR_SENSOR, rby_pins);
-    // //  print_LED(color);
-    digitalWrite(RED_PIN, HIGH);
-    voltage_value = average_color_read(COLOR_SENSOR);
-
-    Serial.print("Voltage reading: ");
-    Serial.println(voltage_value);
-    delay(1000);
-  }
-}
