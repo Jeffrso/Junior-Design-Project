@@ -10,10 +10,7 @@
 #define DEFAULT_READS 10
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
-
 #include "color_sense.h"
-
-
 
 const float RED_CAL[3] = {0.25, 0.25};
 const float BLUE_CAL[3] = {0.5, 0.25};
@@ -21,9 +18,7 @@ const float YELLOW_CAL[3] = {0.8, 0.9};
 const float BLACK_CAL[3] = {0.08, 0.1};
 
 
- 
-
-void setup() {
+void colorSenseSetup() {
   Serial.begin(9600);
 
   pinMode(RED_PIN, OUTPUT);
@@ -33,8 +28,6 @@ void setup() {
   pinMode(BLUE_OUT, OUTPUT);
   pinMode(YELLOW_OUT, OUTPUT);
   pinMode(COLOR_SENSOR, INPUT);
-
-
 }
 
 
@@ -60,11 +53,11 @@ float average_color_read(uint8_t pin) {
           delay(1);
       }
 
-       for (int i = 0; i < DEFAULT_READS; i++) {
+      for (int i = 0; i < DEFAULT_READS; i++) {
           average_read += sensor_val[i];
       }
 
-        average_read = average_read / DEFAULT_READS;
+      average_read = average_read / DEFAULT_READS;
       return average_read;
 }
 
@@ -127,8 +120,7 @@ void print_LED(Colors color) {
   }
 }
 
-void loop() {
-
+void colorSenseTestLoop() {
   float voltage_value = 0;
   while(1) {
     // uint8_t rby_pins[2] = {RED_PIN, BLUE_PIN};
@@ -141,7 +133,4 @@ void loop() {
     Serial.println(voltage_value);
     delay(1000);
   }
-
-
-
 }

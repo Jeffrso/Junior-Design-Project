@@ -32,7 +32,7 @@ void setup() {
 void loop() {
   if (STATE_TEST_MODE) {
       updateState(); 
-      collisionTestLoop();// Runs your entire state machine loop (reads sensor + runs motors)
+      collisionTestLoop();// Runs entire state machine loop (reads sensor + runs motors)
       return;
     }
 
