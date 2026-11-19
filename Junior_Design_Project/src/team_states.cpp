@@ -21,12 +21,6 @@ String TEAM_COLAB_ID = "Djgkp";
 
 static unsigned long stateStartMs = 0; // when we entered current state
 
-static void goToState(int index, const char* reason) {
-    currentState = (TeamState)index;
-    stateStartMs = millis(); // restart flash pattern
-    runCommand();
-    // Serial.printf("%s -> state %d (%s)\n", reason, index, MOTION_NAMES[index]);
-}
 
 
 static void runCommand() {
@@ -49,6 +43,15 @@ static void runCommand() {
             break;
     }
 }
+
+
+static void goToState(int index, const char* reason) {
+    currentState = (TeamState)index;
+    stateStartMs = millis(); // restart flash pattern
+    runCommand();
+    // Serial.printf("%s -> state %d (%s)\n", reason, index, MOTION_NAMES[index]);
+}
+
 
 static void updateState() {
 
