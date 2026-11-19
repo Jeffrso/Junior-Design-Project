@@ -2,5 +2,5 @@
 #include "web.h"
 
 
-void teamSetup();
+// void teamSetup(); //Not used, 
 void teamUpdate();

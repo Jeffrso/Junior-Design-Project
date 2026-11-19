@@ -35,6 +35,7 @@ float get_battery_volt() {
 
 void check_low_battery() {
         float curr_voltage = get_battery_volt();
+        // Serial.print("here");
         if (curr_voltage < 6.5) {
                 digitalWrite(LOW_BATTERY_PIN, HIGH);
         } else {
