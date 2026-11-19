@@ -19,6 +19,9 @@ unsigned long lastSendTime = 0;
 int commandedState = 0; // 1-7 when server sends us a command, 0 = none
 int commandedMove = -1; // 0-6 when server sends us a MOVE command, -1 = none
 
+static const char* PARTNER_MOVE_CMD = "BITBANGER123:MOVE:1"; // partner Bot 1 sends this to make us drive
+static bool partnerMove = false; // set when PARTNER_MOVE_CMD arrives, cleared by webSocket_got_partner_move()
+
 void webSocketEvent( WStype_t type, uint8_t* payload, 
                     size_t length) 
   {
@@ -71,6 +74,11 @@ void webSocketEvent( WStype_t type, uint8_t* payload,
         if (m >= '0' && m <= '6') {
           commandedMove = m - '0';
         }
+      }
+
+      // Partner Bot 1 tells us to drive: "BITBANGER:MOVE:1" anywhere in server's message
+      if (message.indexOf(PARTNER_MOVE_CMD) >= 0) {
+        partnerMove = true;
       }
 
       break;
@@ -160,4 +168,23 @@ bool webSocket_send_move(int move) {
   String cmd = String(CLIENT_ID) + ":MOVE:" + move;
   webSocket.sendTXT(cmd);
   return true;
+}
+
+// true once each time partner Bot 1's "BITBANGER:MOVE:1" arrives
+bool webSocket_got_partner_move() {
+  bool got = partnerMove;
+  partnerMove = false;
+  return got;
+}
+
+// Post text exactly as given ("DJKP1" for partner Bot 1), false if not logged in
+bool webSocket_send_text(const char* text) {
+  if (!authenticated) {
+    return false;
+  }
+  return webSocket.sendTXT(text);
+}
+
+bool webSocket_is_authenticated() {
+  return authenticated;
 }

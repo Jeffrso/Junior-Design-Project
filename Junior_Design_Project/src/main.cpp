@@ -7,6 +7,7 @@
 #include "distancedemo.h"
 #include "color_sense.h"
 #include "lane_follow.h"
+#include "partner_demo.h"
 
 void setup() {
   Serial.begin(115200);
@@ -23,7 +24,9 @@ void setup() {
     return; // bench tests don't need WiFi
   }
 
-  if (MOTION_MODE) {
+  if (PARTNER_MODE) {
+    partnerSetup(); // partner demo: Bot 2 (partner_demo.cpp)
+  } else if (MOTION_MODE) {
     motionSetup(); // bot motions milestone (motion_states.cpp)
   } else {
     stateMachineSetup(); // state machine milestone (state_machine.cpp)
@@ -63,7 +66,10 @@ void loop() {
   }
 
   collisionUpdate(); // keep obstacle decision up to date (obstacleAhead())
-  if (MOTION_MODE) {
+
+  if (PARTNER_MODE) {
+    partnerUpdate(); // waits for BITBANGER:MOVE:1, drives 5 s, flashes, sends DJKP1
+  } else if (MOTION_MODE) {
     motionUpdate(); // Enter = next motion, websocket MOVE command = jump to that motion
   } else {
     stateMachineUpdate(); // Enter = next state, websocket STATE command = jump to that state

@@ -1,24 +1,25 @@
-// Lane following: 3 color sensors -> position error e -> PD steering.
-//   Sensors over lane (L M R) -> e:
-//     0 1 0 -> 0                 centered
-//     0 1 1 -> +1, 0 0 1 -> +2   lane is to our right: steer right
-//     1 1 0 -> -1, 1 0 0 -> -2   lane is to our left: steer left
-//     0 0 0 -> +3 or -3          lost: turn toward the side we last saw it (stop after LOST_STOP_MS)
-//     1 1 1 -> 0, 1 0 1 -> keep the last e
+// Lane following with 3 color sensors (Left, Middle, Right):
+//   Middle sees the lane            -> go straight (e = 0), no matter what the side sensors see
+//   Middle off, Right sees the lane -> steer right (e = +2) until the middle sees it
+//   Middle off, Left sees the lane  -> steer left  (e = -2) until the middle sees it
+//   All 3 see black (lost)          -> 1. turn toward the side the lane was last seen (SEARCH_TURN_MS)
+//                                      2. then go straight until any sensor sees the lane color again,
+//                                         and the rules above turn it back onto the lane
 //   u = Kp*e + Kd*(e - e_prev)
-//   left wheel = base + u, right wheel = base - u (base drops when |e| is big, so it slows in curves)
-//   IR sensor stops bot at the wall at the end of the lane.
+//   left wheel = base + u, right wheel = base - u  (+u = left wheel faster = turn RIGHT)
+//   The base speed drops when |e| is big, so the bot slows down while turning.
 #include "lane_follow.h"
 #include "motor_driver.h"
 #include "distance.h"
 
 // Tuning (in LANE_TEST_MODE, these can change live: p35, d20, v130 + Enter)
-static float Kp = 35; // steering per unit of error: raise if it runs off curves, lower if it zigzags
-static float Kd = 0; // damping: once Kp works, raise (20 to 60) to stop overshoot
-static int basePwm = 130; // forward speed when centered (0-255)
-const int SLOW_PER_ERROR = 15; // base speed drops this much per unit of |e|
-const unsigned long STEP_MS = 40; // one control step: color read (~6 ms) + IR read (~30 ms)
-const unsigned long LOST_STOP_MS = 1500; // stop if no sensor sees the lane for this long
+static float Kp = 35;     // how hard it turns when a side sensor sees the lane
+static float Kd = 0;      // damping: raise (20 to 60) if it overshoots after each turn
+static int basePwm = 130; // forward speed when going straight (0-255)
+const int SLOW_PER_ERROR = 15;              // base speed drops this much per unit of |e|
+const unsigned long STEP_MS = 25;           // one control step (color read takes ~20 ms)
+const unsigned long SEARCH_TURN_MS = 400;   // lost: how long to turn before driving straight
+const unsigned long SEARCH_STOP_MS = 0;     // lost: give up after this long (0 = never, press Enter to stop)
 
 static bool running = false;
 static Colors target = YELLOW_t;
@@ -29,15 +30,12 @@ static unsigned long lostSinceMs = 0;
 static unsigned long lastStepMs = 0;
 static int stepCount = 0;
 
+// At least one sensor sees the lane
 static int patternToError(bool l, bool m, bool r) {
-    if (!l && m && !r) return 0;
-    if (!l && m && r) return 1;
-    if (!l && !m && r) return 2;
-    if (l && m && !r) return -1;
-    if (l && !m && !r) return -2;
-    if (l && m && r) return 0;
-    if (!l && !m && !r) return 3 * lastSide; // lost
-    return ePrev; // 1 0 1: shouldn't happen, keep going
+    if (m) return 0;        // middle on the lane: go straight
+    if (r && !l) return 2;  // lane is to our right: steer right
+    if (l && !r) return -2; // lane is to our left: steer left
+    return 0;               // both sides but not the middle (wide spot): go straight
 }
 
 static void stopWith(const char* reason) {
@@ -68,8 +66,8 @@ bool laneFollowUpdate() {
     if (millis() - lastStepMs < STEP_MS) return true;
     lastStepMs = millis();
 
-    // 1. Wall ahead: stop before hitting it
-    if (collisionUpdate()) {
+    // 1. Wall ahead: stop before hitting it (only once the distance sensor works)
+    if (USE_WALL_STOP && collisionUpdate()) {
         stopWith("wall ahead");
         return false;
     }
@@ -77,30 +75,43 @@ bool laneFollowUpdate() {
     // 2. Which sensors are over the target lane color?
     Colors c[3];
     colorReadAll(c);
-    bool l = (c[0] == target);
+    int leftIdx = SENSORS_MIRRORED ? 2 : 0;
+    int rightIdx = SENSORS_MIRRORED ? 0 : 2;
+    bool l = (c[leftIdx] == target);
     bool m = (c[1] == target);
-    bool r = (c[2] == target);
+    bool r = (c[rightIdx] == target);
 
-    // 3. Position error
-    int e = patternToError(l, m, r);
-    if (e == 1 || e == 2) lastSide = 1;
-    if (e == -1 || e == -2) lastSide = -1;
+    // 3. Remember which side the lane was on (used if we lose it)
+    if (r && !l) lastSide = 1;
+    if (l && !r) lastSide = -1;
 
-    // 4. Lost for too long: stop
-    if (!l && !m && !r) {
-        if (!lost) {
+    // 4. Position error
+    int e;
+    const char* dir;
+    if (l || m || r) {
+        lost = false;                          // a sensor sees the lane: normal rules
+        e = patternToError(l, m, r);
+        dir = (e > 0) ? "steer RIGHT" : (e < 0) ? "steer LEFT" : "straight";
+    } else {
+        if (!lost) {                           // all 3 just turned black
             lost = true;
             lostSinceMs = millis();
         }
-        if (millis() - lostSinceMs > LOST_STOP_MS) {
+        unsigned long lostMs = millis() - lostSinceMs;
+        if (SEARCH_STOP_MS > 0 && lostMs > SEARCH_STOP_MS) {
             stopWith("lane lost");
             return false;
         }
-    } else {
-        lost = false;
+        if (lostMs < SEARCH_TURN_MS) {
+            e = 3 * lastSide;                  // a. turn toward where we last saw the lane
+            dir = (lastSide > 0) ? "lost: TURN R" : "lost: TURN L";
+        } else {
+            e = 0;                             // b. then straight until a sensor sees the lane
+            dir = "lost: STRAIGHT";
+        }
     }
 
-    // 5. PD steering
+    // 5. Steering
     float u = Kp * e + Kd * (e - ePrev);
     ePrev = e;
     int base = basePwm - SLOW_PER_ERROR * abs(e);
@@ -110,7 +121,7 @@ bool laneFollowUpdate() {
 
     // print 5 times a second (printing each step would slow the loop down)
     if (++stepCount % 5 == 0) {
-        Serial.printf("L M R = %d %d %d | e %+d | left %4d right %4d\n", l, m, r, e, left, right);
+        Serial.printf("L M R = %d %d %d | e %+d %-14s | left %4d right %4d\n", l, m, r, e, dir, left, right);
     }
     return true;
 }

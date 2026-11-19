@@ -1,34 +1,40 @@
-// Changes for Lane Following:
-//   - all 3 sensors are read at the same time, so one full read is ~6 ms
-//   - room light is read right before each LED flash and subtracted (LED on - LED off)
-//   - each sensor has its own reference values, set with COLOR_TEST_MODE
 #include "color_sense.h"
 
 const int SAMPLES = 4; // ADC reads averaged per measurement
-const int SETTLE_US = 500; // wait after switching an LED before reading
+const int LED_ON_MS = 15; // how long each color is on before reading (phototransistor needs a few ms)
+const int LED_OFF_MS = 15; // dark time after each color, so next reading starts clean
 const float SCALE = 5.0 / 4095.0; // same units as our first reference values (ADC reading / 4095 * 5)
 
 // Reference {R, G, B} for each color, for each sensor.
 static float CAL[3][4][3] = {
     { // Left sensor
-        {0.4020, 0.1560, 0.3600}, // red
-        {0.3057, 0.8271, 1.9550}, // blue
-        {1.2367, 1.5333, 1.1333}, // yellow
-        {0.0767, 0.1183, 0.2600}  // black
+        {9.0000, 0.0000, 0.0000}, // red
+        {2.3375, 0.0000, 0.0000}, // blue
+        {0.1116, 0.0000, 0.0000}, // yellow
+        {0.0000, 0.0000, 0.0000}  // black
     },
     { // Middle sensor
-        {0.4020, 0.1560, 0.3600}, // red
-        {0.3057, 0.8271, 1.9550}, // blue
-        {1.2367, 1.5333, 1.1333}, // yellow
-        {0.0767, 0.1183, 0.2600}  // black
+        {0.5055, 0.0000, 0.0000}, // red
+        {3.8829, 0.0000, 0.0000}, // blue
+        {1.6316, 0.0000, 0.0000}, // yellow
+        {0.1755, 0.0000, 0.0000}  // black
     },
     { // Right sensor
-        {0.4020, 0.1560, 0.3600}, // red
-        {0.3057, 0.8271, 1.9550}, // blue
-        {1.2367, 1.5333, 1.1333}, // yellow
-        {0.0767, 0.1183, 0.2600}  // black
+        {0.3142, 0.0000, 0.0000}, // red
+        {3.7725, 0.0000, 0.0000}, // blue
+        {1.9428, 0.0000, 0.0000}, // yellow
+        {0.0000, 0.0000, 0.0000}  // black
     }
 };
+
+// Turn one LED color (c = 0 red, 1 green, 2 blue) on or off on all 3 sensors.
+// pinMode is set here too, so pin is always an output when we flash it.
+static void setColor(int c, uint8_t level) {
+    for (int s = 0; s < 3; s++) {
+        pinMode(LED_PINS[s][c], OUTPUT);
+        digitalWrite(LED_PINS[s][c], level);
+    }
+}
 
 // Average SAMPLES readings of all 3 sensors
 static void readSensors(float out[3]) {
@@ -43,19 +49,20 @@ static void readSensors(float out[3]) {
     }
 }
 
-// values[s] = {R, G, B} for sensor s, each = LED on - LED off (room light cancels)
+// One number per sensor: ALL LED colors on together ("blue flash" version), (LED on - LED off).
+// Stored in values[s][0]; values[s][1] and [2] stay 0.
 static void readValues(float values[3][3]) {
-    for (int c = 0; c < 3; c++) {
-        float off[3], on[3];
-        readSensors(off); // LEDs off: room light only
-        for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], HIGH); // all 3 sensors' LEDs of this color on
-        delayMicroseconds(SETTLE_US);
-        readSensors(on); // room light + LED reflection
-        for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], LOW);
-        delayMicroseconds(SETTLE_US); // let it go dark before next color
-        for (int s = 0; s < 3; s++) {
-            values[s][c] = fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
-        }
+    float off[3], on[3];
+    readSensors(off);                          // LEDs off: room light only
+    for (int c = 0; c < 3; c++) setColor(c, HIGH); // every color on, all 3 sensors
+    delay(LED_ON_MS);
+    readSensors(on);                           // room light + LED reflection
+    for (int c = 0; c < 3; c++) setColor(c, LOW);
+    delay(LED_OFF_MS);
+    for (int s = 0; s < 3; s++) {
+        values[s][0] = fabsf(on[s] - off[s]);  // abs: works whichever way the sensor is wired
+        values[s][1] = 0;
+        values[s][2] = 0;
     }
 }
 
@@ -80,7 +87,7 @@ static Colors classify(int s, const float v[3]) {
 void colorSetup() {
     for (int s = 0; s < 3; s++) {
         for (int c = 0; c < 3; c++) {
-            pinMode(LED_PINS[s][c], OUTPUT);
+            pinMode(LED_PINS[s][c], OUTPUT); // all 9 LED pins are outputs, starting off
             digitalWrite(LED_PINS[s][c], LOW);
         }
     }
@@ -106,10 +113,11 @@ const char* colorName(Colors c) {
 }
 
 // COLOR_TEST_MODE
-// Prints each sensor's {R, G, B} and color 4 times a second. Built-in LED shows the middle sensor's color.
-// Calibrate: put ONE sensor over a color, type 2 letters + Enter:
-//   sensor l / m / r, then color r (red), b (blue), y (yellow), k (black). Example: my = middle sensor on yellow
-//   p + Enter prints the entire table to paste over CAL above (if needed).
+// Prints each sensor's {R, G, B} and color once a second.
+// Commands (type, then Enter):
+//   t  = show each LED color for 2 s (red, then green, then blue) so we can see them
+//   l / m / r + r / b / y / k = calibrate ONE sensor on a color. Example: my = middle sensor on yellow
+//   p  = print the whole table to paste over CAL above
 static void printTable() {
     const char* sensorNames[3] = {"Left", "Middle", "Right"};
     const char* colorNames[4] = {"red", "blue", "yellow", "black"};
@@ -144,6 +152,18 @@ static void calibrate(int s, int c) {
                   CAL[s][c][0], CAL[s][c][1], CAL[s][c][2]);
 }
 
+// Show each LED color for 2 s so we can check red, green, and blue all light up
+static void showColors() {
+    const char* names[3] = {"RED (pins 14, 17, 1)", "GREEN (pins 15, 18, 2)", "BLUE (pins 16, 21, 38)"};
+    for (int c = 0; c < 3; c++) {
+        Serial.printf("%s on: all 3 LEDs should show this color\n", names[c]);
+        setColor(c, HIGH);
+        delay(2000);
+        setColor(c, LOW);
+    }
+    Serial.println("done");
+}
+
 static void handleCommand(String cmd) {
     cmd.trim();
     cmd.toLowerCase();
@@ -151,10 +171,14 @@ static void handleCommand(String cmd) {
         printTable();
         return;
     }
+    if (cmd == "t") {
+        showColors();
+        return;
+    }
     int s = String("lmr").indexOf(cmd.charAt(0));
     int c = String("rbyk").indexOf(cmd.charAt(1)); // same order as Colors: red, blue, yellow, black
     if (cmd.length() != 2 || s < 0 || c < 0) {
-        Serial.println("type l/m/r then r/b/y/k (example: my = middle sensor on yellow), or p to print the table");
+        Serial.println("t = show LED colors | l/m/r then r/b/y/k = calibrate (example: my) | p = print table");
         return;
     }
     calibrate(s, c);
@@ -173,7 +197,7 @@ void colorTestLoop() {
     }
 
     static unsigned long lastPrint = 0;
-    if (millis() - lastPrint < 250) return;
+    if (millis() - lastPrint < 1000) return;
     lastPrint = millis();
 
     float v[3][3];
@@ -186,10 +210,4 @@ void colorTestLoop() {
                   v[0][0], v[0][1], v[0][2], colorName(col[0]),
                   v[1][0], v[1][1], v[1][2], colorName(col[1]),
                   v[2][0], v[2][1], v[2][2], colorName(col[2]));
-    int offM = analogReadMilliVolts(COLOR_PINS[1]);
-    for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], HIGH); // all LEDs on (white)
-    delay(4);
-    int onM = analogReadMilliVolts(COLOR_PINS[1]);
-    for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], LOW);
-    Serial.printf("M raw mV: LEDs off %d | LEDs on %d\n", offM, onM);
 }
