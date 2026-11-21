@@ -7,7 +7,7 @@
 //   y / r / b + Enter = follow the yellow / red / blue lane
 //   Enter (or s + Enter) = stop
 //   p35 / d20 / v130 + Enter = set Kp / Kd / base speed without re-uploading
-const bool LANE_TEST_MODE = true;
+const bool LANE_TEST_MODE = false;
 
 // Start by itself ~4 s after power-on or RST (for runs without USB cable).
 // NO_COLOR = off (wait for a typed command). Example: const Colors AUTO_START_COLOR = YELLOW_t;

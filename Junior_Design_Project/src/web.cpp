@@ -1,4 +1,5 @@
 #include "web.h"
+#include "team_states.h"
 
 // Network Configuration
 // Update to tufts_eecs and network password
@@ -19,7 +20,7 @@ unsigned long lastSendTime = 0;
 int commandedState = 0; // 1-7 when server sends us a command, 0 = none
 int commandedMove = -1; // 0-6 when server sends us a MOVE command, -1 = none
 
-static const char* PARTNER_MOVE_CMD = "BITBANGER123:MOVE:1"; // partner Bot 1 sends this to make us drive
+static const char* PARTNER_MOVE_CMD = "BITBANGER:MOVE:1"; // partner Bot 1 sends this to make us drive
 static bool partnerMove = false; // set when PARTNER_MOVE_CMD arrives, cleared by webSocket_got_partner_move()
 
 void webSocketEvent( WStype_t type, uint8_t* payload, 
@@ -67,7 +68,7 @@ void webSocketEvent( WStype_t type, uint8_t* payload,
       }
 
       // Motion command = "BITBANGER123:MOVE:m" (m = 0-6), for motion_states.cpp
-      String moveCmd = String(CLIENT_ID) + ":MOVE:";
+      String moveCmd = "BITBANGER123:MOVE:";
       int moveAt = message.indexOf(moveCmd);
       if (moveAt >= 0) {
         char m = message.charAt(moveAt + moveCmd.length());

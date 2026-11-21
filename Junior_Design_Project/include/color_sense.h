@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 // true = color sensor test (motors don't move): prints all 3 sensors, and lets us calibrate
-const bool COLOR_TEST_MODE = true;
+const bool COLOR_TEST_MODE = false;
 
 // PCB pins. Order: Left, Middle, Right (sensor 1, 2, 3 on PCB)
 const uint8_t COLOR_PINS[3] = {7, 8, 9}; // COLOR_SENSE_1, _2, _3 (ADC1 pins: still work with WiFi on)

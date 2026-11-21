@@ -1,15 +1,3 @@
-"""
-Laptop WebSocket server for testing the robot's state changes without the class server.
-It acts like the class server: robot sends its client ID (BITBANGER123) first,
-this replies with an "authenticated ok" message, then every time you press Enter
-it sends a ping. Each ping should move the robot to its next state.
-    pip install websockets
-    python tools/ws_test_server.py (press Enter to send a ping)
-    python tools/ws_test_server.py --every 3 (also send a ping every 3 seconds)
-
-Type text before pressing Enter to send that text instead of "ping".
-Don't send text containing "authenticated" or "error" (web.cpp treats those inputs as login replies)!
-"""
 import argparse
 import asyncio
 import json
@@ -18,7 +6,7 @@ import sys
 
 import websockets
 
-robots = set() # connections that sent their ID
+robots = {} # connection -> client ID it logged in with
 
 async def handler(ws):
     ip = ws.remote_address[0]
@@ -27,13 +15,15 @@ async def handler(ws):
         async for msg in ws:
             if ws not in robots:
                 # first message is client ID, like on the class server
-                robots.add(ws)
+                robots[ws] = msg
                 print(f"robot ID: {msg!r} -> sending authenticated ok")
                 await ws.send(json.dumps({"type": "authenticated", "status": "ok"}))
             else:
-                print(f"robot says: {msg!r}")
+                print(f"{robots[ws]} says: {msg!r}")
+                # like class server: every client gets "<ID> <message>"
+                websockets.broadcast(robots, f"{robots[ws]} {msg}")
     finally:
-        robots.discard(ws)
+        robots.pop(ws, None)
         print(f"robot {ip} disconnected")
 
 def send_ping(text="ping"):
