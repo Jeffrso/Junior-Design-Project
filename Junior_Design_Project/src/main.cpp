@@ -21,7 +21,7 @@ void setup() {
   motorSetup();
   colorSetup(); // color sensor LEDs off before IR baseline is taken
   irSensorSetup();
-  webSocket_ini(); 
+  // webSocket_ini(); 
   battery_init();
 
   // if (COLOR_TEST_MODE || LANE_TEST_MODE || COLLISION_TEST_MODE || MOTOR_TEST_MODE) {
@@ -41,10 +41,18 @@ void setup() {
 
 void loop() {
   //communication with teams
-  webSocket_loop();
-  teamUpdate(); 
+  // webSocket_loop();
+  // teamUpdate(); 
   // Serial.print("STARt");
+    Colors color_reads[3] = {};
+    colorReadAll(color_reads);
+      const char* sensorNames[3] = {"Left", "Middle", "Right"};
+    for (int c = 0; c < 3; c++) {
+      Serial.print(sensorNames[c]);
+      Serial.print(": ");
+      Serial.println(colorName(color_reads[c]));
+    }
   //battery reading
-  check_low_battery();
+  // check_low_battery();
  
 }
