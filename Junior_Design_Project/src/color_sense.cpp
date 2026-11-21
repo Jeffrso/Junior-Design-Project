@@ -3,31 +3,19 @@
 //   - room light is read right before each LED flash and subtracted (LED on - LED off)
 //   - each sensor has its own reference values, set with COLOR_TEST_MODE
 #include "color_sense.h"
+#define R_BITS 10
+#define MAX_VOLTS 5
 
 const int SAMPLES = 4; // ADC reads averaged per measurement
 const int SETTLE_US = 500; // wait after switching an LED before reading
 const float SCALE = 5.0 / 4095.0; // same units as our first reference values (ADC reading / 4095 * 5)
 
 // Reference {R, G, B} for each color, for each sensor.
-static float CAL[3][4][3] = {
-    { // Left sensor
+static float CAL[4][3] = {
         {0.4020, 0.1560, 0.3600}, // red
         {0.3057, 0.8271, 1.9550}, // blue
         {1.2367, 1.5333, 1.1333}, // yellow
         {0.0767, 0.1183, 0.2600}  // black
-    },
-    { // Middle sensor
-        {0.4020, 0.1560, 0.3600}, // red
-        {0.3057, 0.8271, 1.9550}, // blue
-        {1.2367, 1.5333, 1.1333}, // yellow
-        {0.0767, 0.1183, 0.2600}  // black
-    },
-    { // Right sensor
-        {0.4020, 0.1560, 0.3600}, // red
-        {0.3057, 0.8271, 1.9550}, // blue
-        {1.2367, 1.5333, 1.1333}, // yellow
-        {0.0767, 0.1183, 0.2600}  // black
-    }
 };
 
 // Average SAMPLES readings of all 3 sensors
@@ -35,11 +23,11 @@ static void readSensors(float out[3]) {
     long sum[3] = {0, 0, 0};
     for (int i = 0; i < SAMPLES; i++) {
         for (int s = 0; s < 3; s++) {
-            sum[s] += analogRead(COLOR_PINS[s]);
+            sum[s] += (float)analogRead(COLOR_PINS[s]) / ((1 << R_BITS) - 1) * MAX_VOLTS;
         }
     }
     for (int s = 0; s < 3; s++) {
-        out[s] = sum[s] * SCALE / SAMPLES;
+        out[s] = sum[s] / SAMPLES;
     }
 }
 
@@ -60,13 +48,13 @@ static void readValues(float values[3][3]) {
 }
 
 // Closest reference color for sensor s
-static Colors classify(int s, const float v[3]) {
+static Colors classify(const float v[3]) {
     Colors best = BLACK_t;
     float bestDist = 1e9;
     for (int c = 0; c < 4; c++) {
         float dist = 0;
         for (int k = 0; k < 3; k++) {
-            float diff = v[k] - CAL[s][c][k];
+            float diff = v[k] - CAL[c][k];
             dist += diff * diff;
         }
         if (dist < bestDist) {
@@ -84,14 +72,18 @@ void colorSetup() {
             digitalWrite(LED_PINS[s][c], LOW);
         }
     }
-    analogReadResolution(12);
+    //init sensors to input
+    for (int c = 0; c < 3; c++) {
+        pinMode(COLOR_PINS[c], INPUT);
+    }
+    // analogReadResolution(12);
 }
 
 void colorReadAll(Colors colors[3]) {
     float v[3][3];
     readValues(v);
     for (int s = 0; s < 3; s++) {
-        colors[s] = classify(s, v[s]);
+        colors[s] = classify(v[s]);
     }
 }
 
@@ -119,7 +111,7 @@ static void printTable() {
         Serial.printf("    { // %s sensor\n", sensorNames[s]);
         for (int c = 0; c < 4; c++) {
             Serial.printf("        {%.4f, %.4f, %.4f}%s // %s\n",
-                          CAL[s][c][0], CAL[s][c][1], CAL[s][c][2], c < 3 ? "," : " ", colorNames[c]);
+                          CAL[c][0], CAL[c][1], CAL[c][2], c < 3 ? "," : " ", colorNames[c]);
         }
         Serial.printf("    }%s\n", s < 2 ? "," : "");
     }
@@ -127,70 +119,70 @@ static void printTable() {
 }
 
 // Average 20 reads of sensor s and save them as its reference for color c
-static void calibrate(int s, int c) {
-    const char* sensorNames[3] = {"Left", "Middle", "Right"};
-    float sum[3] = {0, 0, 0};
-    for (int i = 0; i < 20; i++) {
-        float v[3][3];
-        readValues(v);
-        for (int k = 0; k < 3; k++) {
-            sum[k] += v[s][k];
-        }
-    }
-    for (int k = 0; k < 3; k++) {
-        CAL[s][c][k] = sum[k] / 20;
-    }
-    Serial.printf("saved: %s sensor on %s = {%.4f, %.4f, %.4f}\n", sensorNames[s], colorName((Colors)c),
-                  CAL[s][c][0], CAL[s][c][1], CAL[s][c][2]);
-}
+// static void calibrate(int s, int c) {
+//     const char* sensorNames[3] = {"Left", "Middle", "Right"};
+//     float sum[3] = {0, 0, 0};
+//     for (int i = 0; i < 20; i++) {
+//         float v[3][3];
+//         readValues(v);
+//         for (int k = 0; k < 3; k++) {
+//             sum[k] += v[s][k];
+//         }
+//     }
+//     for (int k = 0; k < 3; k++) {
+//         CAL[c][k] = sum[k] / 20;
+//     }
+//     Serial.printf("saved: %s sensor on %s = {%.4f, %.4f, %.4f}\n", sensorNames[s], colorName((Colors)c),
+//                   CAL[c][0], CAL[c][1], CAL[c][2]);
+// }
 
-static void handleCommand(String cmd) {
-    cmd.trim();
-    cmd.toLowerCase();
-    if (cmd == "p") {
-        printTable();
-        return;
-    }
-    int s = String("lmr").indexOf(cmd.charAt(0));
-    int c = String("rbyk").indexOf(cmd.charAt(1)); // same order as Colors: red, blue, yellow, black
-    if (cmd.length() != 2 || s < 0 || c < 0) {
-        Serial.println("type l/m/r then r/b/y/k (example: my = middle sensor on yellow), or p to print the table");
-        return;
-    }
-    calibrate(s, c);
-}
+// static void handleCommand(String cmd) {
+//     cmd.trim();
+//     cmd.toLowerCase();
+//     if (cmd == "p") {
+//         printTable();
+//         return;
+//     }
+//     int s = String("lmr").indexOf(cmd.charAt(0));
+//     int c = String("rbyk").indexOf(cmd.charAt(1)); // same order as Colors: red, blue, yellow, black
+//     if (cmd.length() != 2 || s < 0 || c < 0) {
+//         Serial.println("type l/m/r then r/b/y/k (example: my = middle sensor on yellow), or p to print the table");
+//         return;
+//     }
+//     calibrate(s, c);
+// }
 
-void colorTestLoop() {
-    static String line = "";
-    while (Serial.available()) {
-        char ch = Serial.read();
-        if (ch == '\n') {
-            handleCommand(line);
-            line = "";
-        } else if (ch != '\r') {
-            line += ch;
-        }
-    }
+// void colorTestLoop() {
+//     static String line = "";
+//     while (Serial.available()) {
+//         char ch = Serial.read();
+//         if (ch == '\n') {
+//             handleCommand(line);
+//             line = "";
+//         } else if (ch != '\r') {
+//             line += ch;
+//         }
+//     }
 
-    static unsigned long lastPrint = 0;
-    if (millis() - lastPrint < 250) return;
-    lastPrint = millis();
+//     static unsigned long lastPrint = 0;
+//     if (millis() - lastPrint < 250) return;
+//     lastPrint = millis();
 
-    float v[3][3];
-    readValues(v);
-    Colors col[3];
-    for (int s = 0; s < 3; s++) {
-        col[s] = classify(s, v[s]);
-    }
-    Serial.printf("L %.2f %.2f %.2f %-6s | M %.2f %.2f %.2f %-6s | R %.2f %.2f %.2f %-6s\n",
-                  v[0][0], v[0][1], v[0][2], colorName(col[0]),
-                  v[1][0], v[1][1], v[1][2], colorName(col[1]),
-                  v[2][0], v[2][1], v[2][2], colorName(col[2]));
-    int offM = analogReadMilliVolts(COLOR_PINS[1]);
-    for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], HIGH); // all LEDs on (white)
-    delay(4);
-    int onM = analogReadMilliVolts(COLOR_PINS[1]);
-    for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], LOW);
-    Serial.printf("M raw mV: LEDs off %d | LEDs on %d\n", offM, onM);
-}
+//     float v[3][3];
+//     readValues(v);
+//     Colors col[3];
+//     for (int s = 0; s < 3; s++) {
+//         col[s] = classify(s, v[s]);
+//     }
+//     Serial.printf("L %.2f %.2f %.2f %-6s | M %.2f %.2f %.2f %-6s | R %.2f %.2f %.2f %-6s\n",
+//                   v[0][0], v[0][1], v[0][2], colorName(col[0]),
+//                   v[1][0], v[1][1], v[1][2], colorName(col[1]),
+//                   v[2][0], v[2][1], v[2][2], colorName(col[2]));
+//     int offM = analogReadMilliVolts(COLOR_PINS[1]);
+//     for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], HIGH); // all LEDs on (white)
+//     delay(4);
+//     int onM = analogReadMilliVolts(COLOR_PINS[1]);
+//     for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], LOW);
+//     Serial.printf("M raw mV: LEDs off %d | LEDs on %d\n", offM, onM);
+// }
 
