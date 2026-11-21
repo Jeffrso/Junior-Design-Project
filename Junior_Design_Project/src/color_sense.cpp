@@ -44,6 +44,7 @@ static void readValues(float values[3][3]) {
         for (int s = 0; s < 3; s++) {
             values[s][c] = fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
         }
+        delay(500);
     }
 }
 
@@ -51,6 +52,13 @@ static void readValues(float values[3][3]) {
 static Colors classify(const float v[3]) {
     Colors best = BLACK_t;
     float bestDist = 1e9;
+    const char* colors[3] = {"r", "g", "b"};
+    for (int c = 0; c < 3; c++) {
+        Serial.print(colors[c]);
+        Serial.print("= ");
+        Serial.print(v[c]);
+    }
+
     for (int c = 0; c < 4; c++) {
         float dist = 0;
         for (int k = 0; k < 3; k++) {
@@ -82,8 +90,13 @@ void colorSetup() {
 void colorReadAll(Colors colors[3]) {
     float v[3][3];
     readValues(v);
+    const char* sensorNames[3] = {"Left", "Middle", "Right"};
+
     for (int s = 0; s < 3; s++) {
+        Serial.print(sensorNames[s]);
+        Serial.print(": ");
         colors[s] = classify(v[s]);
+        Serial.println("");
     }
 }
 
