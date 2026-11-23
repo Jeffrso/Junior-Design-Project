@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#define R_BITS 10
-#define MAX_VOLTS 5
+#define R_BITS 12
+#define MAX_VOLTS 3.3
 #define BATTERY_IN 20 // subject to change (idk what current pins are)
 #define LOW_BATTERY_PIN 48
 

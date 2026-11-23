@@ -18,11 +18,11 @@ void setup() {
     delay(3000); // wait up to 3 s for serial monitor so startup prints aren't lost
   // }
   Serial.println("\n=== boot ===");
-  motorSetup();
+  // motorSetup();
   colorSetup(); // color sensor LEDs off before IR baseline is taken
-  irSensorSetup();
+  // irSensorSetup();
   // webSocket_ini(); 
-  battery_init();
+  // battery_init();
 
   // if (COLOR_TEST_MODE || LANE_TEST_MODE || COLLISION_TEST_MODE || MOTOR_TEST_MODE) {
   //   return; // bench tests don't need WiFi
@@ -43,8 +43,8 @@ void loop() {
   //communication with teams
   // webSocket_loop();
   // teamUpdate(); 
-  // Serial.print("STARt");
-    Colors color_reads[3] = {};
+  Serial.print("STARt");
+    Colors color_reads[4] = {};
     colorReadAll(color_reads);
       const char* sensorNames[3] = {"Left", "Middle", "Right"};
     for (int c = 0; c < 3; c++) {

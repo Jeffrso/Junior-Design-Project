@@ -3,8 +3,9 @@
 //   - room light is read right before each LED flash and subtracted (LED on - LED off)
 //   - each sensor has its own reference values, set with COLOR_TEST_MODE
 #include "color_sense.h"
-#define R_BITS 10
-#define MAX_VOLTS 5
+#define R_BITS 12
+#define MAX_VOLTS 3.3
+#define SCALE_TO_FIVE 1.52
 
 const int SAMPLES = 4; // ADC reads averaged per measurement
 const int SETTLE_US = 500; // wait after switching an LED before reading
@@ -20,10 +21,11 @@ static float CAL[4][3] = {
 
 // Average SAMPLES readings of all 3 sensors
 static void readSensors(float out[3]) {
-    long sum[3] = {0, 0, 0};
+    float sum[3] = {0, 0, 0};
     for (int i = 0; i < SAMPLES; i++) {
         for (int s = 0; s < 3; s++) {
-            sum[s] += (float)analogRead(COLOR_PINS[s]) / ((1 << R_BITS) - 1) * MAX_VOLTS;
+            uint16_t raw_value = analogRead(COLOR_PINS[s]);
+            sum[s] +=( (float)raw_value/ ((1 << R_BITS) - 1)) * (float)MAX_VOLTS * (float)SCALE_TO_FIVE;
         }
     }
     for (int s = 0; s < 3; s++) {
@@ -37,12 +39,13 @@ static void readValues(float values[3][3]) {
         float off[3], on[3];
         readSensors(off); // LEDs off: room light only
         for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], HIGH); // all 3 sensors' LEDs of this color on
-        delayMicroseconds(SETTLE_US);
+        delay(SETTLE_US);
         readSensors(on); // room light + LED reflection
         for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], LOW);
-        delayMicroseconds(SETTLE_US); // let it go dark before next color
+        // delayMicroseconds(SETTLE_US); // let it go dark before next color
         for (int s = 0; s < 3; s++) {
-            values[s][c] = fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
+            values[s][c] = on[s];
+            // fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
         }
         delay(500);
     }
@@ -74,6 +77,15 @@ static Colors classify(const float v[3]) {
 }
 
 void colorSetup() {
+//     uint8_t IR_LED_PIN = 4; // IR_IN_1 (D2)
+//     uint8_t IR_LED_PIN_2 = 5; // IR_IN_2 (D3)
+//     uint8_t IR_SENSE_PIN = 6;
+
+// pinMode(LED_PINS[s][c], OUTPUT)
+// pinMode(LED_PINS[s][c], OUTPUT)
+// pinMode(LED_PINS[s][c], OUTPUT)
+
+
     for (int s = 0; s < 3; s++) {
         for (int c = 0; c < 3; c++) {
             pinMode(LED_PINS[s][c], OUTPUT);
