@@ -53,6 +53,6 @@ void loop() {
       Serial.println(colorName(color_reads[c]));
     }
   //battery reading
-  // check_low_battery();
+  check_low_battery();
  
 }
