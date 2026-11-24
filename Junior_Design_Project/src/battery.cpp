@@ -18,7 +18,7 @@ float average_read(uint8_t pin, uint8_t sample_size) {
       average_read = average_read / sample_size;
       if (average_read < 0) {
         return 0;
-      } 
+      }
 
       return average_read;
 }

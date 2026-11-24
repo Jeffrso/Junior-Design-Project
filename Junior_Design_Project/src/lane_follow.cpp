@@ -18,7 +18,7 @@ static float Kd = 0; // damping: once Kp works, raise (20 to 60) to stop oversho
 static int basePwm = 130; // forward speed when centered (0-255)
 const int SLOW_PER_ERROR = 15; // base speed drops this much per unit of |e|
 const unsigned long STEP_MS = 40; // one control step: color read (~6 ms) + IR read (~30 ms)
-const unsigned long LOST_STOP_MS = 1500; // stop if no sensor sees the lane for this long
+const unsigned long LOST_STOP_MS = 7000; // stop if no sensor sees the lane for this long
 
 static bool running = false;
 static Colors target = YELLOW_t;
@@ -29,15 +29,24 @@ static unsigned long lostSinceMs = 0;
 static unsigned long lastStepMs = 0;
 static int stepCount = 0;
 
-static int patternToError(bool l, bool m, bool r) {
-    if (!l && m && !r) return 0;
-    if (!l && m && r) return 1;
-    if (!l && !m && r) return 2;
-    if (l && m && !r) return -1;
-    if (l && !m && !r) return -2;
-    if (l && m && r) return 0;
-    if (!l && !m && !r) return 3 * lastSide; // lost
-    return ePrev; // 1 0 1: shouldn't happen, keep going
+// ORIGINAL 3-SENSOR VERSION
+// static int patternToError(bool l, bool m, bool r) {
+//     if (!l && m && !r) return 0;
+//     if (!l && m && r) return 1;
+//     if (!l && !m && r) return 2;
+//     if (l && m && !r) return -1;
+//     if (l && !m && !r) return -2;
+//     if (l && m && r) return 0;
+//     if (!l && !m && !r) return 3 * lastSide; // lost
+//     return ePrev; // 1 0 1: shouldn't happen, keep going
+// }
+
+// 2-sensor version (Middle ignored)
+static int patternToError(bool l, bool r) {
+    if (l && r) return 0; // both over lane: centered
+    if (!l && r) return 2; // left drifted off: lane is to our right, steer right
+    if (l && !r) return -2; // right drifted off: lane is to our left, steer left
+    return 3 * lastSide; // 0 0 0: lost (handled as pivot in laneFollowUpdate())
 }
 
 static void stopWith(const char* reason) {
@@ -78,16 +87,19 @@ bool laneFollowUpdate() {
     Colors c[3];
     colorReadAll(c);
     bool l = (c[0] == target);
-    bool m = (c[1] == target);
+    // bool m = (c[1] == target); // ORIGINAL
+    bool m = false; // middle sensor ignored (always 0)
     bool r = (c[2] == target);
 
     // 3. Position error
-    int e = patternToError(l, m, r);
+    // int e = patternToError(l, m, r); // ORIGINAL
+    int e = patternToError(l, r); // 2-sensor version
     if (e == 1 || e == 2) lastSide = 1;
     if (e == -1 || e == -2) lastSide = -1;
 
-    // 4. Lost for too long: stop
-    if (!l && !m && !r) {
+    // 4. Lost: pivot back toward last side we saw lane, stop if it takes too long
+    // if (!l && !m && !r) { // ORIGINAL
+    if (!l && !r) {
         if (!lost) {
             lost = true;
             lostSinceMs = millis();
@@ -96,6 +108,16 @@ bool laneFollowUpdate() {
             stopWith("lane lost");
             return false;
         }
+        // no forward motion, spin in place toward lastSide (+1 = right, -1 = left)
+        int left = PIVOT_PWM * lastSide;
+        int right = -PIVOT_PWM * lastSide;
+        drive(left, right);
+        ePrev = e;
+        if (++stepCount % 5 == 0) {
+            Serial.printf("L M R = %d %d %d | LOST, pivoting %s | left %4d right %4d\n", l, m, r,
+                          lastSide > 0 ? "right" : "left", left, right);
+        }
+        return true;
     } else {
         lost = false;
     }
