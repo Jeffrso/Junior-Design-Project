@@ -22,7 +22,7 @@ void setup() {
   colorSetup(); // color sensor LEDs off before IR baseline is taken
   // irSensorSetup();
   // webSocket_ini(); 
-  // battery_init();
+  battery_init();
 
   // if (COLOR_TEST_MODE || LANE_TEST_MODE || COLLISION_TEST_MODE || MOTOR_TEST_MODE) {
   //   return; // bench tests don't need WiFi
@@ -53,6 +53,6 @@ void loop() {
       Serial.println(colorName(color_reads[c]));
     }
   //battery reading
-  // check_low_battery();
+  check_low_battery();
  
 }

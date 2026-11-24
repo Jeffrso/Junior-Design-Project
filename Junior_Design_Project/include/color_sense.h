@@ -6,7 +6,8 @@ const bool COLOR_TEST_MODE = false;
 
 // PCB pins. Order: Left, Middle, Right (sensor 1, 2, 3 on PCB)
 // {7, 8, 9}
-const uint8_t COLOR_PINS[3] = {3, 19, 20}; // COLOR_SENSE_1, _2, _3 (ADC1 pins: still work with WiFi on)
+
+const uint8_t COLOR_PINS[3] = {19, 3, 20}; // COLOR_SENSE_1, _2, _3 (ADC1 pins: still work with WiFi on)
 const uint8_t LED_PINS[3][3] = { // each sensor's own RGB LED: {red, green, blue}
     {16, 14, 15}, // LED1 (RGB1)
     {21, 17, 18}, // LED2 (RGB2)
