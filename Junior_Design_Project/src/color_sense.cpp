@@ -3,7 +3,7 @@
 //   - room light is read right before each LED flash and subtracted (LED on - LED off)
 //   - each sensor has its own reference values, set with COLOR_TEST_MODE
 #include "color_sense.h"
-#define R_BITS 10
+#define R_BITS 12
 #define MAX_VOLTS 5
 
 const int SAMPLES = 4; // ADC reads averaged per measurement
@@ -55,7 +55,7 @@ static Colors classify(const float v[3]) {
     const char* colors[3] = {"r", "g", "b"};
     for (int c = 0; c < 3; c++) {
         Serial.print(colors[c]);
-        Serial.print("= ");
+        Serial.print(" = ");
         Serial.print(v[c]);
     }
 
