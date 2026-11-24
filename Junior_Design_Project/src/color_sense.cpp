@@ -39,7 +39,8 @@ static void readValues(float values[3][3]) {
         float off[3], on[3];
         readSensors(off); // LEDs off: room light only
         for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], HIGH); // all 3 sensors' LEDs of this color on
-        delay(SETTLE_US);
+        // delay(SETTLE_US); // ORIGINAL: 500 ms
+        delayMicroseconds(SETTLE_US); // 500 us, as name intends
         readSensors(on); // room light + LED reflection
         for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], LOW);
         // delayMicroseconds(SETTLE_US); // let it go dark before next color
@@ -47,7 +48,7 @@ static void readValues(float values[3][3]) {
             values[s][c] = on[s];
             // fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
         }
-        delay(500);
+        delay(300); // ORIGINAL: 500 ms pause after each color
     }
 }
 
@@ -84,8 +85,6 @@ void colorSetup() {
 // pinMode(LED_PINS[s][c], OUTPUT)
 // pinMode(LED_PINS[s][c], OUTPUT)
 // pinMode(LED_PINS[s][c], OUTPUT)
-
-
     for (int s = 0; s < 3; s++) {
         for (int c = 0; c < 3; c++) {
             pinMode(LED_PINS[s][c], OUTPUT);
@@ -105,6 +104,10 @@ void colorReadAll(Colors colors[3]) {
     const char* sensorNames[3] = {"Left", "Middle", "Right"};
 
     for (int s = 0; s < 3; s++) {
+        if (s == 1) { // middle: still read in readValues(), but ignored
+            colors[s] = NO_COLOR;
+            continue;
+        }
         Serial.print(sensorNames[s]);
         Serial.print(": ");
         colors[s] = classify(v[s]);
@@ -141,6 +144,14 @@ static void printTable() {
         Serial.printf("    }%s\n", s < 2 ? "," : "");
     }
     Serial.println("};");
+}
+
+// NEW color test: prints each sensor's {R, G, B} so CAL can be filled in
+void colorTestLoop() {
+    Colors col[3];
+    colorReadAll(col);
+    Serial.printf("=> Left %s | Right %s\n\n", colorName(col[0]), colorName(col[2]));
+    delay(250);
 }
 
 // Average 20 reads of sensor s and save them as its reference for color c
@@ -210,4 +221,3 @@ static void printTable() {
 //     for (int s = 0; s < 3; s++) for (int c = 0; c < 3; c++) digitalWrite(LED_PINS[s][c], LOW);
 //     Serial.printf("M raw mV: LEDs off %d | LEDs on %d\n", offM, onM);
 // }
-
