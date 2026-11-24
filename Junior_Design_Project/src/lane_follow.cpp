@@ -1,18 +1,27 @@
-// Lane following: 3 color sensors -> position error e -> PD steering.
+// Lane following: color sensors -> position error e -> PD steering
+// ORIGINAL (3 sensors):
 //   Sensors over lane (L M R) -> e:
 //     0 1 0 -> 0                 centered
 //     0 1 1 -> +1, 0 0 1 -> +2   lane is to our right: steer right
 //     1 1 0 -> -1, 1 0 0 -> -2   lane is to our left: steer left
 //     0 0 0 -> +3 or -3          lost: turn toward the side we last saw it (stop after LOST_STOP_MS)
 //     1 1 1 -> 0, 1 0 1 -> keep the last e
+//
+// CURRENT (2 sensors: Left + Right, middle ignored; the lane is wide enough that both sit on it):
+//   Sensors over lane (L R) -> e:
+//     1 1 -> 0                   centered: go straight
+//     0 1 -> +2                  left drifted off: lane is to our right, steer right
+//     1 0 -> -2                  right drifted off: lane is to our left, steer left
+//     0 0 -> +3 or -3            lost: turn toward the side we last saw it (stop after LOST_STOP_MS)
+//
 //   u = Kp*e + Kd*(e - e_prev)
 //   left wheel = base + u, right wheel = base - u (base drops when |e| is big, so it slows in curves)
-//   IR sensor stops bot at the wall at the end of the lane.
+//   IR sensor stops bot at wall at end of lane.
 #include "lane_follow.h"
 #include "motor_driver.h"
 #include "distance.h"
 
-// Tuning (in LANE_TEST_MODE, these can change live: p35, d20, v130 + Enter)
+// Tuning (in LANE_TEST_MODE, these can change on the fly: p35, d20, v130 + Enter)
 static float Kp = 35; // steering per unit of error: raise if it runs off curves, lower if it zigzags
 static float Kd = 0; // damping: once Kp works, raise (20 to 60) to stop overshoot
 static int basePwm = 130; // forward speed when centered (0-255)
@@ -28,6 +37,8 @@ static bool lost = false;
 static unsigned long lostSinceMs = 0;
 static unsigned long lastStepMs = 0;
 static int stepCount = 0;
+static unsigned long lastStopMs = 0;
+const unsigned long RESTART_DELAY_MS = 2000; // wait this long after a stop before auto-starting again
 
 // ORIGINAL 3-SENSOR VERSION
 // static int patternToError(bool l, bool m, bool r) {
@@ -46,12 +57,13 @@ static int patternToError(bool l, bool r) {
     if (l && r) return 0; // both over lane: centered
     if (!l && r) return 2; // left drifted off: lane is to our right, steer right
     if (l && !r) return -2; // right drifted off: lane is to our left, steer left
-    return 3 * lastSide; // 0 0 0: lost (handled as pivot in laneFollowUpdate())
+    return 3 * lastSide; // 0 0: lost, turn toward the side we last saw it
 }
 
 static void stopWith(const char* reason) {
     drive(0, 0);
     running = false;
+    lastStopMs = millis();
     Serial.printf("STOP: %s\n", reason);
 }
 
@@ -72,6 +84,7 @@ void laneFollowStop() {
     }
 }
 
+// Same steps as ORIGINAL 3-sensor version
 bool laneFollowUpdate() {
     if (!running) return false;
     if (millis() - lastStepMs < STEP_MS) return true;
@@ -84,21 +97,23 @@ bool laneFollowUpdate() {
     }
 
     // 2. Which sensors are over the target lane color?
-    Colors c[3];
+    // Colors c[3];                  // ORIGINAL: 3 sensors
+    Colors c[2];                     // colorReadAll() fills 2: [0] Left, [1] Right
     colorReadAll(c);
     bool l = (c[0] == target);
-    // bool m = (c[1] == target); // ORIGINAL
-    bool m = false; // middle sensor ignored (always 0)
-    bool r = (c[2] == target);
+    // bool m = (c[1] == target);    // ORIGINAL: middle sensor
+    bool m = false;                  // middle sensor ignored (always 0)
+    // bool r = (c[2] == target);    // ORIGINAL: Right was index 2
+    bool r = (c[1] == target);
 
     // 3. Position error
-    // int e = patternToError(l, m, r); // ORIGINAL
-    int e = patternToError(l, r); // 2-sensor version
+    // int e = patternToError(l, m, r);   // ORIGINAL
+    int e = patternToError(l, r);
     if (e == 1 || e == 2) lastSide = 1;
     if (e == -1 || e == -2) lastSide = -1;
 
-    // 4. Lost: pivot back toward last side we saw lane, stop if it takes too long
-    // if (!l && !m && !r) { // ORIGINAL
+    // 4. Lost for too long: stop
+    // if (!l && !m && !r) {         // ORIGINAL
     if (!l && !r) {
         if (!lost) {
             lost = true;
@@ -108,16 +123,6 @@ bool laneFollowUpdate() {
             stopWith("lane lost");
             return false;
         }
-        // no forward motion, spin in place toward lastSide (+1 = right, -1 = left)
-        int left = PIVOT_PWM * lastSide;
-        int right = -PIVOT_PWM * lastSide;
-        drive(left, right);
-        ePrev = e;
-        if (++stepCount % 5 == 0) {
-            Serial.printf("L M R = %d %d %d | LOST, pivoting %s | left %4d right %4d\n", l, m, r,
-                          lastSide > 0 ? "right" : "left", left, right);
-        }
-        return true;
     } else {
         lost = false;
     }
@@ -173,10 +178,32 @@ void laneTestLoop() {
         }
     }
 
-    static bool autoStarted = false;
-    if (AUTO_START_COLOR != NO_COLOR && !autoStarted && millis() > 4000) {
-        autoStarted = true;
-        laneFollowStart(AUTO_START_COLOR);
+    // ORIGINAL: start on fixed AUTO_START_COLOR after 4 s
+    // static bool autoStarted = false;
+    // if (AUTO_START_COLOR != NO_COLOR && !autoStarted && millis() > 4000) {
+    //     autoStarted = true;
+    //     laneFollowStart(AUTO_START_COLOR);
+    // }
+
+    // Start on whichever lane color BOTH sensors see (3 reads in a row), then follow that lane
+    // Resets after every stop (wall, lane lost, RST), after a RESTART_DELAY_MS pause
+    static Colors candidate = NO_COLOR;
+    static int sameCount = 0;
+    if (!running && millis() - lastStopMs > RESTART_DELAY_MS) {
+        Colors c[2];
+        colorReadAll(c);
+        bool isLane = (c[0] == RED_t || c[0] == BLUE_t || c[0] == YELLOW_t);
+        if (isLane && c[0] == c[1]) {
+            sameCount = (c[0] == candidate) ? sameCount + 1 : 1;
+            candidate = c[0];
+        } else {
+            sameCount = 0;
+            candidate = NO_COLOR;
+        }
+        if (sameCount >= 3) {
+            sameCount = 0;
+            laneFollowStart(candidate);
+        }
     }
 
     laneFollowUpdate();

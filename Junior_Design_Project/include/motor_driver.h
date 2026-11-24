@@ -11,8 +11,8 @@
 const bool MOTOR_TEST_MODE = false;
 
 // Calibration Related Things
-const uint8_t LEFT_MOTOR = 1; // SWAP IF TURNS GO WRONG WAY
-const uint8_t RIGHT_MOTOR = 0;
+const uint8_t LEFT_MOTOR = 0;
+const uint8_t RIGHT_MOTOR = 1;
 
 // Motor mismatch: lower faster motor's trim until bot drives straight (keep both <= 1.0)
 const float LEFT_TRIM = 1.00;
