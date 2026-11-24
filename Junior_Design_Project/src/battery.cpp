@@ -10,8 +10,8 @@ float average_read(uint8_t pin, uint8_t sample_size) {
 
        for (int i = 0; i < sample_size; i++) {
           raw_value = analogRead(pin);
-          Serial.print("real raw_value: ");
-          Serial.println(raw_value);
+        //   Serial.print("real raw_value: ");
+        //   Serial.println(raw_value);
           sensor_val = (((float)raw_value / ((1 << R_BITS) - 1))) * (float)MAX_VOLTS;
           average_read += sensor_val;
           delay(1);

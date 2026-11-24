@@ -12,60 +12,66 @@ const int SETTLE_US = 500; // wait after switching an LED before reading
 const float SCALE = 5.0 / 4095.0; // same units as our first reference values (ADC reading / 4095 * 5)
 
 // Reference {R, G, B} for each color, for each sensor.
-static float CAL[4][3] = {
-        {0.4020, 0.1560, 0.3600}, // red
-        {0.3057, 0.8271, 1.9550}, // blue
-        {1.2367, 1.5333, 1.1333}, // yellow
-        {0.0767, 0.1183, 0.2600}  // black
+static float CAL[2][4][3] = {
+    { //left
+        {0.51, .63, 0.3}, // red
+        {0.22, 2.26, 1.94}, // blue
+        {1.47, 3.94, 0.92}, // yellow
+        {0.14, .54, 0.23}  // black
+}, { //right
+        {0.26, .27, 0.04}, // red
+        {0.09, 1.21, 0.31}, // blue
+        {0.88, 2.57, 0.12}, // yellow
+        {0.05, .21, .03}  // black
+}
 };
 
 // Average SAMPLES readings of all 3 sensors
-static void readSensors(float out[3]) {
-    float sum[3] = {0, 0, 0};
+static void readSensors(float out[2]) {
+    float sum[2] = {0, 0};
     for (int i = 0; i < SAMPLES; i++) {
-        for (int s = 0; s < 3; s++) {
+        for (int s = 0; s < 2; s++) {
             uint16_t raw_value = analogRead(COLOR_PINS[s]);
             sum[s] +=( (float)raw_value/ ((1 << R_BITS) - 1)) * (float)MAX_VOLTS * (float)SCALE_TO_FIVE;
         }
     }
-    for (int s = 0; s < 3; s++) {
+    for (int s = 0; s < 2; s++) {
         out[s] = sum[s] / SAMPLES;
     }
 }
 
 // values[s] = {R, G, B} for sensor s, each = LED on - LED off (room light cancels)
-static void readValues(float values[3][3]) {
+static void readValues(float values[2][3]) {
     for (int c = 0; c < 3; c++) {
-        float off[3], on[3];
+        float off[2], on[2];
         readSensors(off); // LEDs off: room light only
-        for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], HIGH); // all 3 sensors' LEDs of this color on
-        delay(SETTLE_US);
+        for (int s = 0; s < 2; s++) digitalWrite(LED_PINS[s][c], HIGH); // all 3 sensors' LEDs of this color on
+        delay(10);
         readSensors(on); // room light + LED reflection
-        for (int s = 0; s < 3; s++) digitalWrite(LED_PINS[s][c], LOW);
+        for (int s = 0; s < 2; s++) digitalWrite(LED_PINS[s][c], LOW);
         // delayMicroseconds(SETTLE_US); // let it go dark before next color
-        for (int s = 0; s < 3; s++) {
-            values[s][c] = on[s];
-            // fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
+        for (int s = 0; s < 2; s++) {
+            values[s][c] = fabsf(on[s] - off[s]); // abs: works whichever way sensor is wired
         }
-        delay(500);
+        delay(10);
     }
 }
 
 // Closest reference color for sensor s
-static Colors classify(const float v[3]) {
+static Colors classify(int s, const float v[3]) {
     Colors best = BLACK_t;
     float bestDist = 1e9;
     const char* colors[3] = {"r", "g", "b"};
-    for (int c = 0; c < 3; c++) {
-        Serial.print(colors[c]);
-        Serial.print(" = ");
-        Serial.print(v[c]);
-    }
+    // for (int c = 0; c < 3; c++) {
+    //     Serial.print(colors[c]);
+    //     Serial.print(" = ");
+    //     Serial.print(v[c]);
+    // }
 
     for (int c = 0; c < 4; c++) {
         float dist = 0;
         for (int k = 0; k < 3; k++) {
-            float diff = v[k] - CAL[c][k];
+            float diff = v[k] - CAL[s][c][k];
             dist += diff * diff;
         }
         if (dist < bestDist) {
@@ -86,29 +92,30 @@ void colorSetup() {
 // pinMode(LED_PINS[s][c], OUTPUT)
 
 
-    for (int s = 0; s < 3; s++) {
+    for (int s = 0; s < 2; s++) {
         for (int c = 0; c < 3; c++) {
             pinMode(LED_PINS[s][c], OUTPUT);
             digitalWrite(LED_PINS[s][c], LOW);
         }
     }
     //init sensors to input
-    for (int c = 0; c < 3; c++) {
+    for (int c = 0; c < 2; c++) {
         pinMode(COLOR_PINS[c], INPUT);
     }
     // analogReadResolution(12);
 }
 
-void colorReadAll(Colors colors[3]) {
-    float v[3][3];
+void colorReadAll(Colors colors[2]) {
+    float v[2][3];
     readValues(v);
-    const char* sensorNames[3] = {"Left", "Middle", "Right"};
+    const char* sensorNames[2] = {"Left", "Right"};
 
-    for (int s = 0; s < 3; s++) {
-        Serial.print(sensorNames[s]);
-        Serial.print(": ");
-        colors[s] = classify(v[s]);
-        Serial.println("");
+    for (int s = 0; s < 2; s++) {
+    //     Serial.print(sensorNames[s]);
+    //     Serial.print(": ");
+        colors[s] = classify(s, v[s]);
+    //     Serial.print(" ");
+    //     Serial.println("");
     }
 }
 

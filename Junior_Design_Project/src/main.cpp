@@ -43,11 +43,11 @@ void loop() {
   //communication with teams
   // webSocket_loop();
   // teamUpdate(); 
-  Serial.print("STARt");
-    Colors color_reads[4] = {};
+  Serial.print("STARt\n");
+    Colors color_reads[2] = {};
     colorReadAll(color_reads);
-      const char* sensorNames[3] = {"Left", "Middle", "Right"};
-    for (int c = 0; c < 3; c++) {
+      const char* sensorNames[3] = {"Left", "Right"};
+    for (int c = 0; c < 2; c++) {
       Serial.print(sensorNames[c]);
       Serial.print(": ");
       Serial.println(colorName(color_reads[c]));
